@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relly - Household Budget</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,7 +11,6 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -22,41 +21,21 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: 'Inter', -apple-system, sans-serif;
-            background: #F9FAFB;
+            background: #F3F4F6;
             color: #111827;
-            -webkit-font-smoothing: antialiased;
         }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #F3F4F6; }
-        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        input[type=number] { -moz-appearance: textfield; }
-        
-        .gradient-brand { background: linear-gradient(135deg, #00844A 0%, #006837 100%); }
-        
-        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .gradient-green { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .animate-slide-up { animation: slideUp 0.3s ease-out; }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-        
-        .loading-spinner {
-            border: 3px solid #F3F4F6;
-            border-top: 3px solid #00844A;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
     </style>
 </head>
 <body>
     <div id="root"></div>
     
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback, useRef } = React;
+        const { useState, useEffect, useMemo } = React;
 
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyBQ2HrvtpMEW6ZvxjE--LWk2crbOfdNlHM",
             authDomain: "household-budget-app-4aba1.firebaseapp.com",
@@ -67,712 +46,423 @@
         };
         
         let db, auth, googleProvider;
-        try {
-            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            auth = firebase.auth();
-            googleProvider = new firebase.auth.GoogleAuthProvider();
-        } catch (error) {
-            console.error("Firebase error:", error);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
+        googleProvider = new firebase.auth.GoogleAuthProvider();
 
-        const formatMoney = (num) => {
-            if (num == null || isNaN(num)) return '$0.00';
-            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
-        };
+        const formatMoney = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0);
 
-        const Toast = ({ message, type, onClose }) => {
-            useEffect(() => {
-                const timer = setTimeout(onClose, 3000);
-                return () => clearTimeout(timer);
-            }, []);
-            return (
-                <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] animate-slide-up">
-                    <div className={`px-6 py-3 rounded-xl shadow-lg font-semibold ${type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-                        {type === 'success' ? '✓' : '✗'} {message}
-                    </div>
-                </div>
-            );
-        };
+        // Add Transaction Modal
+        const AddTransaction = ({ isOpen, onClose, accounts, categories, vehicles }) => {
+            const [type, setType] = useState('expense');
+            const [amount, setAmount] = useState('');
+            const [desc, setDesc] = useState('');
+            const [category, setCategory] = useState('');
+            const [account, setAccount] = useState('');
+            const [vehicle, setVehicle] = useState('');
+            const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
-        const Loading = () => (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="loading-spinner"></div>
-            </div>
-        );
-
-        // Transaction Modal
-        const TransactionModal = ({ isOpen, onClose, txToEdit, categories, accounts, vehicles, onSave }) => {
-            const [formData, setFormData] = useState({
-                type: 'expense',
-                amount: '',
-                title: '',
-                category: '',
-                date: new Date().toISOString().split('T')[0],
-                accountId: '',
-                vehicleId: ''
-            });
-
-            useEffect(() => {
-                if (!isOpen) return;
-                if (txToEdit) {
-                    setFormData({
-                        type: txToEdit.amount > 0 ? 'income' : 'expense',
-                        amount: Math.abs(txToEdit.amount).toString(),
-                        title: txToEdit.title || '',
-                        category: txToEdit.category || '',
-                        date: txToEdit.date || new Date().toISOString().split('T')[0],
-                        accountId: txToEdit.accountId || '',
-                        vehicleId: txToEdit.vehicleId || ''
-                    });
-                } else {
-                    setFormData({
-                        type: 'expense',
-                        amount: '',
-                        title: '',
-                        category: '',
-                        date: new Date().toISOString().split('T')[0],
-                        accountId: accounts[0]?.firebaseId || '',
-                        vehicleId: ''
-                    });
-                }
-            }, [txToEdit, accounts, isOpen]);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                const amount = parseFloat(formData.amount);
-                if (!amount || !formData.title || !formData.category || !formData.accountId) {
-                    alert('Please fill required fields');
-                    return;
-                }
+            const save = async () => {
+                if (!amount || !desc || !category || !account) return alert('Fill all required fields');
                 
-                const finalAmount = formData.type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
-                const accName = accounts.find(a => a.firebaseId === formData.accountId)?.name || 'Unknown';
-                const vehicleName = formData.vehicleId ? vehicles.find(v => v.firebaseId === formData.vehicleId)?.name : null;
+                const finalAmount = type === 'expense' ? -Math.abs(parseFloat(amount)) : Math.abs(parseFloat(amount));
                 
-                await onSave({
-                    ...formData,
+                await db.collection('transactions').add({
                     amount: finalAmount,
-                    accountName: accName,
-                    vehicleName: vehicleName,
-                    id: txToEdit?.firebaseId
+                    description: desc,
+                    category,
+                    accountId: account,
+                    vehicleId: vehicle || null,
+                    date,
+                    createdAt: new Date()
                 });
-                onClose();
-            };
-
-            const handleDelete = async () => {
-                if (!txToEdit?.firebaseId) return;
-                if (confirm('Delete this transaction?')) {
-                    await db.collection('transactions').doc(txToEdit.firebaseId).delete();
-                    onClose();
-                }
-            };
-
-            const filteredCategories = Object.keys(categories).filter(c => categories[c]?.type === formData.type).sort();
-
-            if (!isOpen) return null;
-
-            return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md animate-slide-up" onClick={(e) => e.stopPropagation()}>
-                        <div className="p-6 border-b">
-                            <h2 className="text-2xl font-bold">{txToEdit ? 'Edit' : 'Add'} Transaction</h2>
-                        </div>
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            <div className="flex gap-2">
-                                <button type="button" onClick={() => setFormData({...formData, type: 'expense', category: ''})} className={`flex-1 py-3 rounded-xl font-bold ${formData.type === 'expense' ? 'bg-red-500 text-white' : 'bg-gray-100'}`}>Expense</button>
-                                <button type="button" onClick={() => setFormData({...formData, type: 'income', category: ''})} className={`flex-1 py-3 rounded-xl font-bold ${formData.type === 'income' ? 'bg-green-500 text-white' : 'bg-gray-100'}`}>Income</button>
-                            </div>
-                            
-                            <input type="number" step="0.01" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} placeholder="Amount" className="w-full px-4 py-3 border rounded-xl text-2xl font-bold" required autoFocus />
-                            
-                            <input type="text" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} placeholder="Description" className="w-full px-4 py-3 border rounded-xl" required />
-                            
-                            <div className="grid grid-cols-2 gap-3">
-                                <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="px-4 py-3 border rounded-xl" required>
-                                    <option value="">Category...</option>
-                                    {filteredCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                </select>
-                                <select value={formData.accountId} onChange={(e) => setFormData({...formData, accountId: e.target.value})} className="px-4 py-3 border rounded-xl" required>
-                                    <option value="">Account...</option>
-                                    {accounts.map(acc => <option key={acc.firebaseId} value={acc.firebaseId}>{acc.name}</option>)}
-                                </select>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <select value={formData.vehicleId} onChange={(e) => setFormData({...formData, vehicleId: e.target.value})} className="px-4 py-3 border rounded-xl">
-                                    <option value="">No Vehicle</option>
-                                    {vehicles.map(v => <option key={v.firebaseId} value={v.firebaseId}>{v.name}</option>)}
-                                </select>
-                                <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="px-4 py-3 border rounded-xl" required />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 rounded-xl font-bold">Cancel</button>
-                                <button type="submit" className="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold">Save</button>
-                            </div>
-                            {txToEdit && <button type="button" onClick={handleDelete} className="w-full py-2 text-red-600 font-bold text-sm">Delete</button>}
-                        </form>
-                    </div>
-                </div>
-            );
-        };
-
-        // Budget Modal
-        const BudgetModal = ({ isOpen, onClose, categories, budgets }) => {
-            const [amounts, setAmounts] = useState({});
-
-            useEffect(() => {
-                setAmounts({...budgets});
-            }, [budgets, isOpen]);
-
-            const handleSave = async () => {
-                await db.collection('budgets').doc('monthly').set(amounts, { merge: true });
+                
+                setAmount('');
+                setDesc('');
+                setCategory('');
+                setVehicle('');
                 onClose();
             };
 
             if (!isOpen) return null;
 
-            const expenseCategories = Object.keys(categories).filter(c => categories[c]?.type === 'expense').sort();
+            const cats = Object.keys(categories).filter(c => categories[c] === type);
 
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md animate-slide-up max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-white p-6 border-b z-10">
-                            <h2 className="text-2xl font-bold">Monthly Budget</h2>
-                        </div>
-                        <div className="p-6 space-y-3">
-                            {expenseCategories.map(cat => (
-                                <div key={cat}>
-                                    <label className="block text-sm font-bold mb-1">{cat}</label>
-                                    <input 
-                                        type="number" 
-                                        step="0.01"
-                                        value={amounts[cat] || ''} 
-                                        onChange={(e) => setAmounts({...amounts, [cat]: parseFloat(e.target.value) || 0})}
-                                        placeholder="Budget amount"
-                                        className="w-full px-4 py-2 border rounded-xl"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                        <div className="sticky bottom-0 bg-white p-6 border-t flex gap-3">
-                            <button onClick={onClose} className="flex-1 py-3 bg-gray-100 rounded-xl font-bold">Cancel</button>
-                            <button onClick={handleSave} className="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold">Save Budget</button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // Import Component
-        const ImportCSV = ({ onImport, accounts }) => {
-            const fileInputRef = useRef(null);
-
-            const importCSV = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                Papa.parse(file, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (results) => {
-                        const imported = results.data
-                            .filter(row => row.Date && row.Amount)
-                            .map(row => ({
-                                date: row.Date,
-                                amount: parseFloat(row.Amount) || 0,
-                                title: row.Description || 'Imported',
-                                category: row.Category || 'Uncategorized',
-                                accountId: accounts[0]?.firebaseId || '',
-                                accountName: row.Account || accounts[0]?.name || 'Unknown',
-                                vehicleId: '',
-                                vehicleName: row.Vehicle || null
-                            }));
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+                    <div className="bg-white rounded-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                        <h2 className="text-2xl font-bold mb-4">Add Transaction</h2>
                         
-                        if (imported.length > 0) {
-                            onImport(imported);
-                        } else {
-                            alert('No valid transactions found');
-                        }
-                        e.target.value = '';
-                    }
-                });
-            };
+                        <div className="flex gap-2 mb-4">
+                            <button onClick={() => setType('expense')} className={`flex-1 py-2 rounded-lg font-bold ${type === 'expense' ? 'bg-red-500 text-white' : 'bg-gray-100'}`}>Expense</button>
+                            <button onClick={() => setType('income')} className={`flex-1 py-2 rounded-lg font-bold ${type === 'income' ? 'bg-green-500 text-white' : 'bg-gray-100'}`}>Income</button>
+                        </div>
 
-            return (
-                <label className="py-2.5 px-4 bg-purple-100 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-200 cursor-pointer text-center block">
-                    📤 Import CSV
-                    <input ref={fileInputRef} type="file" accept=".csv" onChange={importCSV} className="hidden" />
-                </label>
+                        <input type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Amount" className="w-full p-3 border rounded-lg mb-3 text-xl font-bold" />
+                        <input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="Description" className="w-full p-3 border rounded-lg mb-3" />
+                        
+                        <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-3 border rounded-lg mb-3">
+                            <option value="">Select Category</option>
+                            {cats.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+
+                        <select value={account} onChange={e => setAccount(e.target.value)} className="w-full p-3 border rounded-lg mb-3">
+                            <option value="">Select Account</option>
+                            {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                        </select>
+
+                        <select value={vehicle} onChange={e => setVehicle(e.target.value)} className="w-full p-3 border rounded-lg mb-3">
+                            <option value="">No Vehicle</option>
+                            {vehicles.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                        </select>
+
+                        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-3 border rounded-lg mb-4" />
+
+                        <div className="flex gap-3">
+                            <button onClick={onClose} className="flex-1 py-3 bg-gray-100 rounded-lg font-bold">Cancel</button>
+                            <button onClick={save} className="flex-1 py-3 bg-green-600 text-white rounded-lg font-bold">Save</button>
+                        </div>
+                    </div>
+                </div>
             );
         };
 
         // Main App
         const App = ({ user, logout }) => {
-            const [activeTab, setActiveTab] = useState('dashboard');
-            const [modalOpen, setModalOpen] = useState(false);
-            const [budgetModalOpen, setBudgetModalOpen] = useState(false);
-            const [editTx, setEditTx] = useState(null);
-            const [toast, setToast] = useState(null);
-
+            const [tab, setTab] = useState('dashboard');
+            const [showAdd, setShowAdd] = useState(false);
+            
             const [transactions, setTransactions] = useState([]);
-            const [categories, setCategories] = useState({});
             const [accounts, setAccounts] = useState([]);
+            const [categories, setCategories] = useState({});
             const [vehicles, setVehicles] = useState([]);
             const [budgets, setBudgets] = useState({});
 
+            // Load data
             useEffect(() => {
-                if (!db) return;
+                const unsub1 = db.collection('transactions').onSnapshot(s => setTransactions(s.docs.map(d => ({id: d.id, ...d.data()}))));
+                const unsub2 = db.collection('accounts').onSnapshot(s => setAccounts(s.docs.map(d => ({id: d.id, ...d.data()}))));
+                const unsub3 = db.collection('categories').onSnapshot(s => {
+                    const cats = {};
+                    s.docs.forEach(d => cats[d.id] = d.data().type);
+                    setCategories(cats);
+                });
+                const unsub4 = db.collection('vehicles').onSnapshot(s => setVehicles(s.docs.map(d => ({id: d.id, ...d.data()}))));
+                const unsub5 = db.collection('budgets').doc('monthly').onSnapshot(d => setBudgets(d.exists ? d.data() : {}));
                 
-                const unsubTx = db.collection('transactions').onSnapshot(snap => {
-                    setTransactions(snap.docs.map(doc => ({firebaseId: doc.id, ...doc.data()})));
-                });
-                
-                const unsubCat = db.collection('categories').onSnapshot(snap => {
-                    const data = {};
-                    snap.docs.forEach(doc => { data[doc.id] = doc.data(); });
-                    setCategories(data);
-                });
-                
-                const unsubAcc = db.collection('accounts').onSnapshot(snap => {
-                    setAccounts(snap.docs.map(doc => ({firebaseId: doc.id, ...doc.data()})));
-                });
-
-                const unsubVehicles = db.collection('vehicles').onSnapshot(snap => {
-                    setVehicles(snap.docs.map(doc => ({firebaseId: doc.id, ...doc.data()})));
-                });
-
-                const unsubBudget = db.collection('budgets').doc('monthly').onSnapshot(doc => {
-                    if (doc.exists) setBudgets(doc.data());
-                });
-
-                return () => {
-                    unsubTx();
-                    unsubCat();
-                    unsubAcc();
-                    unsubVehicles();
-                    unsubBudget();
-                };
+                return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
             }, []);
 
-            // Calculate total cash (accounts with positive balances)
+            // Calculate total cash (sum of all account balances)
             const totalCash = useMemo(() => {
                 return accounts.reduce((sum, acc) => {
-                    const initial = parseFloat(acc.initialBalance) || 0;
-                    const txTotal = transactions
-                        .filter(tx => tx.accountId === acc.firebaseId)
-                        .reduce((s, tx) => s + (parseFloat(tx.amount) || 0), 0);
-                    const balance = initial + txTotal;
-                    return balance > 0 ? sum + balance : sum;
+                    const accTx = transactions.filter(t => t.accountId === acc.id);
+                    const balance = (acc.startingBalance || 0) + accTx.reduce((s, t) => s + t.amount, 0);
+                    return sum + balance;
                 }, 0);
             }, [accounts, transactions]);
 
             // This month stats
-            const thisMonthStats = useMemo(() => {
+            const thisMonth = useMemo(() => {
                 const now = new Date();
-                const thisMonth = transactions.filter(tx => {
-                    const txDate = new Date(tx.date);
-                    return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
+                const txs = transactions.filter(t => {
+                    const d = new Date(t.date);
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
                 });
-                
-                const income = thisMonth.filter(t => t.amount > 0).reduce((s, t) => s + parseFloat(t.amount), 0);
-                const expenses = thisMonth.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(parseFloat(t.amount)), 0);
-                
-                return { income, expenses, count: thisMonth.length };
+                const income = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+                const spending = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+                return { income, spending };
             }, [transactions]);
 
-            // Comparison stats (30/60/90 days)
-            const comparisonStats = useMemo(() => {
+            // Spending comparisons
+            const comparisons = useMemo(() => {
                 const now = new Date();
-                const getLast = (days) => {
-                    const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-                    const filtered = transactions.filter(tx => new Date(tx.date) >= cutoff);
-                    return filtered.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(parseFloat(t.amount)), 0);
-                };
+                const days30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                const days60 = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+                const days90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
                 
-                return {
-                    days30: getLast(30),
-                    days60: getLast(60),
-                    days90: getLast(90)
-                };
+                const get = (cutoff) => transactions.filter(t => new Date(t.date) >= cutoff && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+                
+                return { days30: get(days30), days60: get(days60), days90: get(days90) };
             }, [transactions]);
 
-            // Year to date by category
-            const ytdByCategory = useMemo(() => {
+            // YTD by category
+            const ytd = useMemo(() => {
                 const now = new Date();
-                const ytd = transactions.filter(tx => {
-                    const txDate = new Date(tx.date);
-                    return txDate.getFullYear() === now.getFullYear();
-                });
+                const txs = transactions.filter(t => new Date(t.date).getFullYear() === now.getFullYear());
                 
                 const income = {};
                 const expenses = {};
                 
-                ytd.forEach(tx => {
-                    const cat = tx.category || 'Uncategorized';
-                    const amount = Math.abs(parseFloat(tx.amount) || 0);
-                    
-                    if (tx.amount > 0) {
-                        income[cat] = (income[cat] || 0) + amount;
-                    } else {
-                        expenses[cat] = (expenses[cat] || 0) + amount;
-                    }
+                txs.forEach(t => {
+                    const cat = t.category || 'Uncategorized';
+                    const amt = Math.abs(t.amount);
+                    if (t.amount > 0) income[cat] = (income[cat] || 0) + amt;
+                    else expenses[cat] = (expenses[cat] || 0) + amt;
                 });
                 
                 return { income, expenses };
             }, [transactions]);
 
-            // Category spending (this month)
-            const categorySpending = useMemo(() => {
+            // Budget status (this month)
+            const budgetStatus = useMemo(() => {
                 const now = new Date();
-                const thisMonth = transactions.filter(tx => {
-                    const txDate = new Date(tx.date);
-                    return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear() && tx.amount < 0;
+                const thisMonthTx = transactions.filter(t => {
+                    const d = new Date(t.date);
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && t.amount < 0;
                 });
                 
-                const spending = {};
-                thisMonth.forEach(tx => {
-                    const cat = tx.category || 'Uncategorized';
-                    spending[cat] = (spending[cat] || 0) + Math.abs(parseFloat(tx.amount) || 0);
+                const spent = {};
+                thisMonthTx.forEach(t => {
+                    const cat = t.category || 'Uncategorized';
+                    spent[cat] = (spent[cat] || 0) + Math.abs(t.amount);
                 });
-                return spending;
-            }, [transactions]);
-
-            // Vehicle costs
-            const vehicleCosts = useMemo(() => {
-                const costs = {};
-                vehicles.forEach(v => {
-                    const vehicleTx = transactions.filter(tx => tx.vehicleId === v.firebaseId);
-                    costs[v.firebaseId] = vehicleTx.reduce((sum, tx) => sum + Math.abs(parseFloat(tx.amount) || 0), 0);
+                
+                return Object.keys(budgets).map(cat => {
+                    const budget = budgets[cat];
+                    const amount = spent[cat] || 0;
+                    const pct = budget > 0 ? (amount / budget) * 100 : 0;
+                    return { cat, budget, spent: amount, pct, over: amount > budget };
                 });
-                return costs;
-            }, [transactions, vehicles]);
+            }, [transactions, budgets]);
 
-            const handleSaveTransaction = async (data) => {
-                try {
-                    const payload = {
-                        amount: data.amount,
-                        title: data.title,
-                        category: data.category,
-                        date: data.date,
-                        accountId: data.accountId,
-                        accountName: data.accountName,
-                        vehicleId: data.vehicleId || null,
-                        vehicleName: data.vehicleName || null,
-                        user: user.email,
-                        updatedAt: new Date()
-                    };
-
-                    if (data.id) {
-                        await db.collection('transactions').doc(data.id).update(payload);
-                        setToast({ message: 'Transaction updated', type: 'success' });
-                    } else {
-                        await db.collection('transactions').add({...payload, createdAt: new Date()});
-                        setToast({ message: 'Transaction added', type: 'success' });
-                    }
-                } catch (error) {
-                    setToast({ message: 'Error: ' + error.message, type: 'error' });
-                }
-            };
-
-            const handleImport = async (txs) => {
-                try {
-                    for (const tx of txs) {
-                        await db.collection('transactions').add({
-                            ...tx,
-                            user: user.email,
-                            createdAt: new Date(),
-                            updatedAt: new Date()
-                        });
-                    }
-                    setToast({ message: `Imported ${txs.length} transactions`, type: 'success' });
-                } catch (error) {
-                    setToast({ message: 'Import error', type: 'error' });
-                }
-            };
-
-            const recentTransactions = useMemo(() => 
-                transactions.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10),
+            // Recent transactions
+            const recent = useMemo(() => 
+                transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10),
                 [transactions]
             );
 
             return (
                 <div className="min-h-screen bg-gray-50">
-                    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-
                     {/* Header */}
-                    <div className="gradient-brand shadow-lg sticky top-0 z-20">
-                        <div className="max-w-7xl mx-auto px-4 py-4">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h1 className="text-2xl font-black text-white">Relly</h1>
-                                    <p className="text-xs text-white/80">Household Budget</p>
-                                </div>
-                                <button onClick={logout} className="text-sm text-white/90 hover:text-white font-semibold">Sign Out</button>
+                    <div className="gradient-green text-white p-4 sticky top-0 z-10 shadow-lg">
+                        <div className="max-w-6xl mx-auto flex justify-between items-center">
+                            <div>
+                                <h1 className="text-2xl font-black">Relly</h1>
+                                <p className="text-xs opacity-90">Household Budget</p>
                             </div>
+                            <button onClick={logout} className="text-sm font-semibold">Sign Out</button>
                         </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="max-w-7xl mx-auto px-4 py-6 pb-24">
-                        {activeTab === 'dashboard' && (
-                            <div className="space-y-6 animate-fade-in">
-                                {/* Total Cash */}
-                                <div className="bg-white rounded-2xl shadow-lg p-8 border-2 border-green-100">
-                                    <div className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">Total Cash On Hand</div>
-                                    <div className="text-5xl font-black text-green-600">{formatMoney(totalCash)}</div>
+                    <div className="max-w-6xl mx-auto p-4 pb-24">
+                        {tab === 'dashboard' && (
+                            <div className="space-y-6 fade-in">
+                                {/* TOTAL CASH - BIG */}
+                                <div className="bg-white rounded-2xl shadow-lg p-8 border-4 border-green-100">
+                                    <div className="text-sm font-bold text-gray-600 uppercase mb-2">Total Cash</div>
+                                    <div className="text-6xl font-black text-green-600">{formatMoney(totalCash)}</div>
                                 </div>
 
-                                {/* This Month Summary */}
-                                <div>
-                                    <h2 className="text-lg font-bold mb-3">This Month</h2>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div className="bg-white rounded-xl shadow-sm p-5 border">
-                                            <div className="text-xs font-bold text-gray-500 uppercase mb-1">Income</div>
-                                            <div className="text-2xl font-black text-green-600">{formatMoney(thisMonthStats.income)}</div>
+                                {/* This Month */}
+                                <div className="bg-white rounded-xl shadow p-6">
+                                    <h2 className="text-lg font-bold mb-4">This Month</h2>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <div className="text-xs text-gray-500 uppercase mb-1">Income</div>
+                                            <div className="text-2xl font-bold text-green-600">{formatMoney(thisMonth.income)}</div>
                                         </div>
-                                        <div className="bg-white rounded-xl shadow-sm p-5 border">
-                                            <div className="text-xs font-bold text-gray-500 uppercase mb-1">Spending</div>
-                                            <div className="text-2xl font-black text-red-600">{formatMoney(thisMonthStats.expenses)}</div>
-                                        </div>
-                                        <div className="bg-white rounded-xl shadow-sm p-5 border">
-                                            <div className="text-xs font-bold text-gray-500 uppercase mb-1">Net</div>
-                                            <div className={`text-2xl font-black ${thisMonthStats.income - thisMonthStats.expenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                {formatMoney(thisMonthStats.income - thisMonthStats.expenses)}
-                                            </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500 uppercase mb-1">Spending</div>
+                                            <div className="text-2xl font-bold text-red-600">{formatMoney(thisMonth.spending)}</div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Spending Comparisons */}
-                                <div>
-                                    <h2 className="text-lg font-bold mb-3">Spending Trends</h2>
-                                    <div className="bg-white rounded-xl shadow-sm p-5 border">
-                                        <div className="grid grid-cols-3 gap-6">
-                                            <div>
-                                                <div className="text-xs font-bold text-gray-500 uppercase mb-1">Last 30 Days</div>
-                                                <div className="text-xl font-black text-gray-900">{formatMoney(comparisonStats.days30)}</div>
-                                            </div>
-                                            <div>
-                                                <div className="text-xs font-bold text-gray-500 uppercase mb-1">Last 60 Days</div>
-                                                <div className="text-xl font-black text-gray-900">{formatMoney(comparisonStats.days60)}</div>
-                                            </div>
-                                            <div>
-                                                <div className="text-xs font-bold text-gray-500 uppercase mb-1">Last 90 Days</div>
-                                                <div className="text-xl font-black text-gray-900">{formatMoney(comparisonStats.days90)}</div>
-                                            </div>
+                                <div className="bg-white rounded-xl shadow p-6">
+                                    <h2 className="text-lg font-bold mb-4">Spending Trends</h2>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <div className="text-xs text-gray-500 uppercase mb-1">Last 30 Days</div>
+                                            <div className="text-xl font-bold">{formatMoney(comparisons.days30)}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500 uppercase mb-1">Last 60 Days</div>
+                                            <div className="text-xl font-bold">{formatMoney(comparisons.days60)}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500 uppercase mb-1">Last 90 Days</div>
+                                            <div className="text-xl font-bold">{formatMoney(comparisons.days90)}</div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* YTD by Category */}
-                                <div>
-                                    <h2 className="text-lg font-bold mb-3">Year-to-Date by Category</h2>
-                                    <div className="bg-white rounded-xl shadow-sm p-5 border space-y-3">
-                                        <div>
-                                            <h3 className="text-sm font-bold text-green-600 mb-2">Income</h3>
-                                            {Object.entries(ytdByCategory.income).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => (
-                                                <div key={cat} className="flex justify-between py-2 border-b last:border-0">
-                                                    <span className="font-semibold">{cat}</span>
-                                                    <span className="font-bold text-green-600">{formatMoney(amt)}</span>
-                                                </div>
-                                            ))}
+                                <div className="bg-white rounded-xl shadow p-6">
+                                    <h2 className="text-lg font-bold mb-4">Year-to-Date by Category</h2>
+                                    
+                                    <h3 className="text-sm font-bold text-green-600 mb-2">Income</h3>
+                                    {Object.entries(ytd.income).sort((a,b) => b[1] - a[1]).map(([cat, amt]) => (
+                                        <div key={cat} className="flex justify-between py-2 border-b">
+                                            <span>{cat}</span>
+                                            <span className="font-bold text-green-600">{formatMoney(amt)}</span>
                                         </div>
-                                        <div>
-                                            <h3 className="text-sm font-bold text-red-600 mb-2 mt-4">Expenses</h3>
-                                            {Object.entries(ytdByCategory.expenses).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => (
-                                                <div key={cat} className="flex justify-between py-2 border-b last:border-0">
-                                                    <span className="font-semibold">{cat}</span>
-                                                    <span className="font-bold text-red-600">{formatMoney(amt)}</span>
-                                                </div>
-                                            ))}
+                                    ))}
+                                    
+                                    <h3 className="text-sm font-bold text-red-600 mb-2 mt-4">Expenses</h3>
+                                    {Object.entries(ytd.expenses).sort((a,b) => b[1] - a[1]).map(([cat, amt]) => (
+                                        <div key={cat} className="flex justify-between py-2 border-b">
+                                            <span>{cat}</span>
+                                            <span className="font-bold text-red-600">{formatMoney(amt)}</span>
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
 
                                 {/* Budget Status */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-3">
-                                        <h2 className="text-lg font-bold">Budget Status (This Month)</h2>
-                                        <button onClick={() => setBudgetModalOpen(true)} className="text-sm text-green-600 font-bold">Edit Budget</button>
-                                    </div>
-                                    <div className="bg-white rounded-xl shadow-sm p-5 border space-y-3">
-                                        {Object.keys(budgets).map(cat => {
-                                            const budget = budgets[cat] || 0;
-                                            const spent = categorySpending[cat] || 0;
-                                            const remaining = budget - spent;
-                                            const percent = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
-                                            const isOver = spent > budget;
-                                            const status = isOver ? '🔴' : percent > 70 ? '🟡' : '🟢';
-
-                                            return (
-                                                <div key={cat}>
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <span className="font-semibold text-sm">{status} {cat}</span>
-                                                        <div className="text-sm">
-                                                            <span className="font-bold">{formatMoney(spent)}</span>
-                                                            <span className="text-gray-500"> / {formatMoney(budget)}</span>
-                                                            <span className={`ml-2 font-bold ${isOver ? 'text-red-600' : 'text-green-600'}`}>
-                                                                {isOver ? 'OVER ' : ''}{formatMoney(Math.abs(remaining))}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="w-full bg-gray-100 rounded-full h-2">
-                                                        <div className={`h-full rounded-full ${isOver ? 'bg-red-500' : percent > 70 ? 'bg-yellow-500' : 'bg-green-500'}`} style={{width: `${percent}%`}}></div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                        {Object.keys(budgets).length === 0 && (
-                                            <div className="text-center py-8 text-gray-500">
-                                                <p>No budgets set. Click "Edit Budget".</p>
+                                <div className="bg-white rounded-xl shadow p-6">
+                                    <h2 className="text-lg font-bold mb-4">Budget Status (This Month)</h2>
+                                    {budgetStatus.map(b => (
+                                        <div key={b.cat} className="mb-4">
+                                            <div className="flex justify-between mb-1">
+                                                <span className="font-semibold">{b.over ? '🔴' : b.pct > 70 ? '🟡' : '🟢'} {b.cat}</span>
+                                                <span className="text-sm">
+                                                    <span className="font-bold">{formatMoney(b.spent)}</span>
+                                                    <span className="text-gray-500"> / {formatMoney(b.budget)}</span>
+                                                </span>
                                             </div>
-                                        )}
-                                    </div>
+                                            <div className="bg-gray-200 rounded-full h-2">
+                                                <div className={`h-full rounded-full ${b.over ? 'bg-red-500' : b.pct > 70 ? 'bg-yellow-500' : 'bg-green-500'}`} style={{width: `${Math.min(b.pct, 100)}%`}}></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {budgetStatus.length === 0 && <p className="text-gray-500">No budgets set. Go to Settings.</p>}
                                 </div>
 
-                                {/* Recent Transactions */}
-                                <div>
-                                    <h2 className="text-lg font-bold mb-3">Recent Transactions</h2>
-                                    <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-                                        {recentTransactions.map(tx => (
-                                            <div key={tx.firebaseId} onClick={() => { setEditTx(tx); setModalOpen(true); }} className="flex justify-between items-center p-4 border-b last:border-0 hover:bg-gray-50 cursor-pointer">
-                                                <div>
-                                                    <div className="font-semibold">{tx.title}</div>
-                                                    <div className="text-xs text-gray-500">{tx.date} • {tx.category} {tx.vehicleName ? `• ${tx.vehicleName}` : ''}</div>
-                                                </div>
-                                                <div className={`text-lg font-bold ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {tx.amount > 0 ? '+' : ''}{formatMoney(tx.amount)}
-                                                </div>
+                                {/* Recent */}
+                                <div className="bg-white rounded-xl shadow p-6">
+                                    <h2 className="text-lg font-bold mb-4">Recent Transactions</h2>
+                                    {recent.map(t => (
+                                        <div key={t.id} className="flex justify-between py-3 border-b">
+                                            <div>
+                                                <div className="font-semibold">{t.description}</div>
+                                                <div className="text-xs text-gray-500">{t.date} • {t.category}</div>
                                             </div>
-                                        ))}
-                                        {recentTransactions.length === 0 && (
-                                            <div className="text-center py-12 text-gray-500">
-                                                <p>No transactions yet.</p>
+                                            <div className={`font-bold ${t.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {t.amount > 0 ? '+' : ''}{formatMoney(t.amount)}
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    ))}
+                                    {recent.length === 0 && <p className="text-gray-500">No transactions yet.</p>}
                                 </div>
                             </div>
                         )}
 
-                        {activeTab === 'vehicles' && (
-                            <div className="animate-fade-in space-y-6">
-                                <div>
-                                    <h2 className="text-lg font-bold mb-3">Vehicle Expenses</h2>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {vehicles.map(v => (
-                                            <div key={v.firebaseId} className="bg-white rounded-xl shadow-sm p-5 border">
-                                                <div className="flex justify-between items-start mb-3">
-                                                    <h3 className="text-lg font-bold">{v.name}</h3>
-                                                    <button onClick={async () => {
-                                                        if (confirm(`Delete ${v.name}?`)) {
-                                                            await db.collection('vehicles').doc(v.firebaseId).delete();
-                                                        }
-                                                    }} className="text-red-600 text-sm font-semibold">Delete</button>
-                                                </div>
-                                                <div className="text-2xl font-black text-gray-900 mb-3">{formatMoney(vehicleCosts[v.firebaseId] || 0)}</div>
-                                                <div className="text-xs text-gray-500">Total expenses tracked</div>
+                        {tab === 'vehicles' && (
+                            <div className="fade-in">
+                                <h2 className="text-xl font-bold mb-4">Vehicle Expenses</h2>
+                                {vehicles.map(v => {
+                                    const vTx = transactions.filter(t => t.vehicleId === v.id);
+                                    const total = vTx.reduce((s, t) => s + Math.abs(t.amount), 0);
+                                    return (
+                                        <div key={v.id} className="bg-white rounded-xl shadow p-6 mb-4">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h3 className="text-lg font-bold">{v.name}</h3>
+                                                <button onClick={async () => {
+                                                    if (confirm(`Delete ${v.name}?`)) await db.collection('vehicles').doc(v.id).delete();
+                                                }} className="text-red-600 text-sm font-semibold">Delete</button>
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="bg-white rounded-xl shadow-sm p-6 border">
-                                    <h3 className="text-lg font-bold mb-4">Add Vehicle</h3>
-                                    <form onSubmit={async (e) => {
+                                            <div className="text-3xl font-black text-gray-900">{formatMoney(total)}</div>
+                                            <div className="text-sm text-gray-500">{vTx.length} transactions</div>
+                                        </div>
+                                    );
+                                })}
+                                
+                                <div className="bg-white rounded-xl shadow p-6 mt-6">
+                                    <h3 className="font-bold mb-3">Add Vehicle</h3>
+                                    <form onSubmit={async e => {
                                         e.preventDefault();
-                                        const name = e.target.vehicleName.value.trim();
+                                        const name = e.target.vname.value.trim();
                                         if (name) {
-                                            await db.collection('vehicles').add({ name });
+                                            await db.collection('vehicles').add({name});
                                             e.target.reset();
-                                            setToast({ message: 'Vehicle added', type: 'success' });
                                         }
                                     }} className="flex gap-3">
-                                        <input name="vehicleName" placeholder="Vehicle name (e.g., 2024 Hyundai)" className="flex-1 px-4 py-3 border rounded-xl" required />
-                                        <button type="submit" className="px-6 py-3 bg-green-600 text-white rounded-xl font-bold">Add</button>
+                                        <input name="vname" placeholder="Vehicle name" className="flex-1 p-3 border rounded-lg" />
+                                        <button type="submit" className="px-6 py-3 bg-green-600 text-white rounded-lg font-bold">Add</button>
                                     </form>
                                 </div>
                             </div>
                         )}
 
-                        {activeTab === 'settings' && (
-                            <div className="animate-fade-in space-y-6">
-                                <div className="bg-white rounded-xl shadow-sm p-6 border">
-                                    <h3 className="text-lg font-bold mb-4">Import Data</h3>
-                                    <ImportCSV onImport={handleImport} accounts={accounts} />
-                                    <p className="text-xs text-gray-500 mt-2">CSV format: Date, Amount, Description, Category, Account, Vehicle (optional)</p>
-                                </div>
-
-                                <div className="bg-white rounded-xl shadow-sm p-6 border">
-                                    <h3 className="text-lg font-bold mb-4">Accounts</h3>
-                                    <div className="space-y-2 mb-4">
-                                        {accounts.map(acc => (
-                                            <div key={acc.firebaseId} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                                <div>
-                                                    <span className="font-semibold">{acc.name}</span>
-                                                    <span className="text-xs text-gray-500 ml-2">Starting: {formatMoney(acc.initialBalance)}</span>
-                                                </div>
-                                                <button onClick={async () => {
-                                                    if (confirm(`Delete "${acc.name}"?`)) {
-                                                        await db.collection('accounts').doc(acc.firebaseId).delete();
-                                                    }
-                                                }} className="text-red-600 text-sm font-semibold">Delete</button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <form onSubmit={async (e) => {
+                        {tab === 'settings' && (
+                            <div className="space-y-6 fade-in">
+                                {/* Accounts */}
+                                <div className="bg-white rounded-xl shadow p-6">
+                                    <h3 className="font-bold mb-4">Accounts</h3>
+                                    {accounts.map(a => (
+                                        <div key={a.id} className="flex justify-between p-3 bg-gray-50 rounded mb-2">
+                                            <span className="font-semibold">{a.name}</span>
+                                            <button onClick={async () => {
+                                                if (confirm(`Delete ${a.name}?`)) await db.collection('accounts').doc(a.id).delete();
+                                            }} className="text-red-600 text-sm">Delete</button>
+                                        </div>
+                                    ))}
+                                    <form onSubmit={async e => {
                                         e.preventDefault();
-                                        const name = e.target.accName.value.trim();
-                                        const initialBalance = parseFloat(e.target.accBalance.value) || 0;
+                                        const name = e.target.aname.value.trim();
+                                        const balance = parseFloat(e.target.abalance.value) || 0;
                                         if (name) {
-                                            await db.collection('accounts').add({ name, initialBalance });
+                                            await db.collection('accounts').add({name, startingBalance: balance});
                                             e.target.reset();
-                                            setToast({ message: 'Account added', type: 'success' });
                                         }
-                                    }} className="space-y-3">
-                                        <input name="accName" placeholder="Account name (e.g., Chase Checking)" className="w-full px-4 py-3 border rounded-xl" required />
-                                        <input name="accBalance" type="number" step="0.01" placeholder="Starting balance" className="w-full px-4 py-3 border rounded-xl" required />
-                                        <button type="submit" className="w-full py-3 bg-green-600 text-white rounded-xl font-bold">Add Account</button>
+                                    }} className="mt-4 space-y-2">
+                                        <input name="aname" placeholder="Account name" className="w-full p-3 border rounded-lg" />
+                                        <input name="abalance" type="number" step="0.01" placeholder="Starting balance" className="w-full p-3 border rounded-lg" />
+                                        <button type="submit" className="w-full py-3 bg-green-600 text-white rounded-lg font-bold">Add Account</button>
                                     </form>
                                 </div>
 
-                                <div className="bg-white rounded-xl shadow-sm p-6 border">
-                                    <h3 className="text-lg font-bold mb-4">Categories</h3>
-                                    <div className="space-y-2 mb-4">
-                                        {Object.keys(categories).sort().map(cat => (
-                                            <div key={cat} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                                <div>
-                                                    <span className="font-semibold">{cat}</span>
-                                                    <span className="text-xs text-gray-500 ml-2 uppercase">{categories[cat]?.type}</span>
-                                                </div>
-                                                <button onClick={async () => {
-                                                    if (confirm(`Delete "${cat}"?`)) {
-                                                        await db.collection('categories').doc(cat).delete();
-                                                    }
-                                                }} className="text-red-600 text-sm font-semibold">Delete</button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <form onSubmit={async (e) => {
+                                {/* Categories */}
+                                <div className="bg-white rounded-xl shadow p-6">
+                                    <h3 className="font-bold mb-4">Categories</h3>
+                                    {Object.keys(categories).sort().map(c => (
+                                        <div key={c} className="flex justify-between p-3 bg-gray-50 rounded mb-2">
+                                            <span><strong>{c}</strong> <span className="text-xs text-gray-500">({categories[c]})</span></span>
+                                            <button onClick={async () => {
+                                                if (confirm(`Delete ${c}?`)) await db.collection('categories').doc(c).delete();
+                                            }} className="text-red-600 text-sm">Delete</button>
+                                        </div>
+                                    ))}
+                                    <form onSubmit={async e => {
                                         e.preventDefault();
-                                        const name = e.target.catName.value.trim();
-                                        const type = e.target.catType.value;
+                                        const name = e.target.cname.value.trim();
+                                        const type = e.target.ctype.value;
                                         if (name) {
-                                            await db.collection('categories').doc(name).set({ type });
+                                            await db.collection('categories').doc(name).set({type});
                                             e.target.reset();
-                                            setToast({ message: 'Category added', type: 'success' });
                                         }
-                                    }} className="flex gap-2">
-                                        <input name="catName" placeholder="Category name" className="flex-1 px-4 py-3 border rounded-xl" required />
-                                        <select name="catType" className="px-4 py-3 border rounded-xl">
+                                    }} className="mt-4 flex gap-2">
+                                        <input name="cname" placeholder="Category name" className="flex-1 p-3 border rounded-lg" />
+                                        <select name="ctype" className="p-3 border rounded-lg">
                                             <option value="expense">Expense</option>
                                             <option value="income">Income</option>
                                         </select>
-                                        <button type="submit" className="px-6 py-3 bg-green-600 text-white rounded-xl font-bold">Add</button>
+                                        <button type="submit" className="px-6 py-3 bg-green-600 text-white rounded-lg font-bold">Add</button>
+                                    </form>
+                                </div>
+
+                                {/* Budgets */}
+                                <div className="bg-white rounded-xl shadow p-6">
+                                    <h3 className="font-bold mb-4">Monthly Budgets</h3>
+                                    <form onSubmit={async e => {
+                                        e.preventDefault();
+                                        const data = {};
+                                        Object.keys(categories).filter(c => categories[c] === 'expense').forEach(cat => {
+                                            const val = parseFloat(e.target[`budget_${cat}`]?.value) || 0;
+                                            if (val > 0) data[cat] = val;
+                                        });
+                                        await db.collection('budgets').doc('monthly').set(data);
+                                        alert('Budgets saved!');
+                                    }}>
+                                        {Object.keys(categories).filter(c => categories[c] === 'expense').sort().map(cat => (
+                                            <div key={cat} className="mb-3">
+                                                <label className="block text-sm font-semibold mb-1">{cat}</label>
+                                                <input name={`budget_${cat}`} type="number" step="0.01" defaultValue={budgets[cat] || ''} placeholder="Budget amount" className="w-full p-3 border rounded-lg" />
+                                            </div>
+                                        ))}
+                                        <button type="submit" className="w-full py-3 bg-green-600 text-white rounded-lg font-bold mt-4">Save Budgets</button>
                                     </form>
                                 </div>
                             </div>
@@ -780,72 +470,48 @@
                     </div>
 
                     {/* FAB */}
-                    <button onClick={() => { setEditTx(null); setModalOpen(true); }} className="fixed bottom-20 right-6 w-16 h-16 gradient-brand text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform z-40">
-                        <span className="text-3xl font-bold">+</span>
-                    </button>
+                    <button onClick={() => setShowAdd(true)} className="fixed bottom-20 right-6 w-16 h-16 gradient-green text-white rounded-full shadow-2xl text-3xl font-bold">+</button>
 
                     {/* Bottom Nav */}
-                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-2xl z-30">
-                        <div className="max-w-7xl mx-auto flex justify-around h-16">
-                            <button onClick={() => setActiveTab('dashboard')} className="flex flex-col items-center justify-center flex-1">
-                                <span className="text-2xl">{activeTab === 'dashboard' ? '📊' : '📈'}</span>
-                                <span className={`text-xs font-semibold ${activeTab === 'dashboard' ? 'text-green-600' : 'text-gray-500'}`}>Dashboard</span>
-                            </button>
-                            <button onClick={() => setActiveTab('vehicles')} className="flex flex-col items-center justify-center flex-1">
-                                <span className="text-2xl">{activeTab === 'vehicles' ? '🚗' : '🚙'}</span>
-                                <span className={`text-xs font-semibold ${activeTab === 'vehicles' ? 'text-green-600' : 'text-gray-500'}`}>Vehicles</span>
-                            </button>
-                            <button onClick={() => setActiveTab('settings')} className="flex flex-col items-center justify-center flex-1">
-                                <span className="text-2xl">{activeTab === 'settings' ? '⚙️' : '⚙'}</span>
-                                <span className={`text-xs font-semibold ${activeTab === 'settings' ? 'text-green-600' : 'text-gray-500'}`}>Settings</span>
-                            </button>
-                        </div>
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t h-16 flex z-20">
+                        <button onClick={() => setTab('dashboard')} className="flex-1 flex flex-col items-center justify-center">
+                            <span className="text-2xl">{tab === 'dashboard' ? '📊' : '📈'}</span>
+                            <span className={`text-xs font-semibold ${tab === 'dashboard' ? 'text-green-600' : 'text-gray-500'}`}>Dashboard</span>
+                        </button>
+                        <button onClick={() => setTab('vehicles')} className="flex-1 flex flex-col items-center justify-center">
+                            <span className="text-2xl">{tab === 'vehicles' ? '🚗' : '🚙'}</span>
+                            <span className={`text-xs font-semibold ${tab === 'vehicles' ? 'text-green-600' : 'text-gray-500'}`}>Vehicles</span>
+                        </button>
+                        <button onClick={() => setTab('settings')} className="flex-1 flex flex-col items-center justify-center">
+                            <span className="text-2xl">{tab === 'settings' ? '⚙️' : '⚙'}</span>
+                            <span className={`text-xs font-semibold ${tab === 'settings' ? 'text-green-600' : 'text-gray-500'}`}>Settings</span>
+                        </button>
                     </nav>
 
-                    <TransactionModal 
-                        isOpen={modalOpen}
-                        onClose={() => { setModalOpen(false); setEditTx(null); }}
-                        txToEdit={editTx}
-                        categories={categories}
-                        accounts={accounts}
-                        vehicles={vehicles}
-                        onSave={handleSaveTransaction}
-                    />
-
-                    <BudgetModal 
-                        isOpen={budgetModalOpen}
-                        onClose={() => setBudgetModalOpen(false)}
-                        categories={categories}
-                        budgets={budgets}
-                    />
+                    <AddTransaction isOpen={showAdd} onClose={() => setShowAdd(false)} accounts={accounts} categories={categories} vehicles={vehicles} />
                 </div>
             );
         };
 
-        // Login Screen
-        const LoginScreen = () => {
-            const [loading, setLoading] = useState(false);
-
-            const handleLogin = async () => {
-                setLoading(true);
+        // Login
+        const Login = () => {
+            const login = async () => {
                 try {
                     await auth.signInWithPopup(googleProvider);
-                } catch (error) {
-                    alert('Login failed: ' + error.message);
-                    setLoading(false);
+                } catch (e) {
+                    alert('Login failed');
                 }
             };
 
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center gradient-brand p-6">
-                    <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mb-8 shadow-2xl">
-                        <span className="text-green-600 text-5xl font-black">R</span>
+                <div className="min-h-screen gradient-green flex flex-col items-center justify-center p-6">
+                    <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mb-8">
+                        <span className="text-5xl font-black text-green-600">R</span>
                     </div>
                     <h1 className="text-5xl font-black text-white mb-3">Relly</h1>
-                    <p className="text-white/90 mb-12 text-center max-w-sm font-medium">Household Budget Tracker</p>
-                    <button onClick={handleLogin} disabled={loading} className="w-full max-w-sm bg-white text-gray-900 font-bold py-4 px-6 rounded-2xl shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50">
-                        {loading ? <div className="loading-spinner w-6 h-6 border-2"></div> : <span className="text-3xl">🔐</span>}
-                        <span>{loading ? 'Signing in...' : 'Sign in with Google'}</span>
+                    <p className="text-white/90 mb-12">Household Budget Tracker</p>
+                    <button onClick={login} className="bg-white text-gray-900 font-bold py-4 px-8 rounded-2xl shadow-2xl">
+                        Sign in with Google
                     </button>
                 </div>
             );
@@ -857,23 +523,17 @@
             const [loading, setLoading] = useState(true);
 
             useEffect(() => {
-                if (!auth) {
-                    setLoading(false);
-                    return;
-                }
-                const unsub = auth.onAuthStateChanged(u => {
+                return auth.onAuthStateChanged(u => {
                     setUser(u);
                     setLoading(false);
                 });
-                return () => unsub();
             }, []);
 
-            if (loading) return <Loading />;
-            return user ? <App user={user} logout={() => auth.signOut()} /> : <LoginScreen />;
+            if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+            return user ? <App user={user} logout={() => auth.signOut()} /> : <Login />;
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<Root />);
+        ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
     </script>
 </body>
 </html>
