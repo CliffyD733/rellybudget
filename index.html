@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Relly - Financial Command Center</title>
+    
+    <!-- Core Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- React Production -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <!-- Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+            color: #111827;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #F3F4F6; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+        
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] { -moz-appearance: textfield; }
+        
+        /* Gradients */
+        .gradient-brand { background: linear-gradient(135deg, #00844A 0%, #006837 100%); }
+        .gradient-success { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
+        .gradient-danger { background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); }
+        .gradient-purple { background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); }
+        .gradient-orange { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); }
+        .gradient-blue { background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); }
+        
+        /* Animations */
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        /* Card Styles */
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        /* Button Hover States */
+        .btn-hover {
+            transition: all 0.2s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-hover:active {
+            transform: translateY(0);
+        }
+        
+        /* Loading State */
+        .loading-spinner {
+            border: 3px solid #F3F4F6;
+            border-top: 3px solid #00844A;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+        // ===== FIREBASE CONFIGURATION =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyBQ2HrvtpMEW6ZvxjE--LWk2crbOfdNlHM",
+            authDomain: "household-budget-app-4aba1.firebaseapp.com",
+            projectId: "household-budget-app-4aba1",
+            storageBucket: "household-budget-app-4aba1.firebasestorage.app",
+            messagingSenderId: "40062087444",
+            appId: "1:40062087444:web:4a6621cd127b39cf86d201",
+            measurementId: "G-KCFHDRBBVR"
+        };
+        
+        let db, auth, googleProvider;
+        
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+            auth = firebase.auth();
+            googleProvider = new firebase.auth.GoogleAuthProvider();
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+        }
+
+        // ===== UTILITY FUNCTIONS =====
+        const formatMoney = (num) => {
+            if (num == null || isNaN(num)) return '$0.00';
+            return new Intl.NumberFormat('en-US', { 
+                style: 'currency', 
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        };
+
+        const formatPercent = (num) => {
+            if (num == null || isNaN(num)) return '0%';
+            return `${num.toFixed(1)}%`;
+        };
+
+        const getTodayDate = () => {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        // ===== TOAST COMPONENT =====
+        const Toast = ({ message, type = 'success', onClose }) => {
+            useEffect(() => {
+                const timer = setTimeout(onClose, 3000);
+                return () => clearTimeout(timer);
+            }, [onClose]);
+            
+            return (
+                <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] animate-slide-up">
+                    <div className={`px-6 py-3 rounded-xl shadow-lg font-semibold ${
+                        type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                    }`}>
+                        {type === 'success' ? '✓ ' : '✗ '}{message}
+                    </div>
+                </div>
+            );
+        };
+
+        // ===== LOADING COMPONENT =====
+        const Loading = () => (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="loading-spinner"></div>
+            </div>
+        );
+
+        // ===== LIVE CLOCK COMPONENT =====
+        const LiveClock = () => {
+            const [time, setTime] = useState(new Date());
+            
+            useEffect(() => {
+                const timer = setInterval(() => setTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+            
+            return (
+                <div className="text-white text-sm font-medium">
+                    {time.toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric',
+                        year: 'numeric'
+                    })} • {time.toLocaleTimeString('en-US', { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true
+                    })}
+                </div>
+            );
+        };
+
+        // ===== DOUGHNUT CHART COMPONENT =====
+        const DoughnutChart = ({ data, colors, centerText, centerSubtext }) => {
+            const canvasRef = useRef(null);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                if (!canvasRef.current || !data || Object.keys(data).length === 0) return;
+                
+                const ctx = canvasRef.current.getContext('2d');
+                const sorted = Object.entries(data)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 6);
+                
+                if (chartRef.current) {
+                    chartRef.current.destroy();
+                }
+                
+                chartRef.current = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: sorted.map(([k]) => k),
+                        datasets: [{
+                            data: sorted.map(([, v]) => Math.abs(v)),
+                            backgroundColor: colors,
+                            borderWidth: 3,
+                            borderColor: '#ffffff',
+                            hoverBorderWidth: 4,
+                            hoverBorderColor: '#00844A'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '72%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 12,
+                                    font: { 
+                                        size: 11, 
+                                        family: 'Inter',
+                                        weight: '500'
+                                    },
+                                    color: '#374151'
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: '#111827',
+                                padding: 12,
+                                titleFont: { size: 13, weight: 'bold' },
+                                bodyFont: { size: 12 },
+                                callbacks: {
+                                    label: (ctx) => ` ${formatMoney(ctx.parsed)}`
+                                }
+                            }
+                        }
+                    }
+                });
+
+                return () => {
+                    if (chartRef.current) {
+                        chartRef.current.destroy();
+                    }
+                };
+            }, [data, colors]);
+
+            return (
+                <div className="relative h-64">
+                    <canvas ref={canvasRef}></canvas>
+                    {centerText && (
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                            <div className="text-2xl font-bold text-gray-900">{centerText}</div>
+                            {centerSubtext && (
+                                <div className="text-xs text-gray-500 mt-1 uppercase tracking-wide">{centerSubtext}</div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ===== DATA MANAGEMENT COMPONENT =====
+        const DataManagement = ({ transactions, onImport }) => {
+            const fileInputRef = useRef(null);
+
+            const exportCSV = useCallback(() => {
+                try {
+                    const headers = ['Date', 'Type', 'Amount', 'Description', 'Category', 'Account', 'Earner'];
+                    const rows = transactions.map(tx => [
+                        tx.date || '',
+                        tx.amount > 0 ? 'Income' : 'Expense',
+                        tx.amount || 0,
+                        (tx.title || '').replace(/,/g, ' '),
+                        tx.category || '',
+                        tx.sourceAccountName || '',
+                        tx.earner || ''
+                    ]);
+                    
+                    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `relly-export-${getTodayDate()}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error('CSV Export Error:', error);
+                    alert('Error exporting CSV. Please try again.');
+                }
+            }, [transactions]);
+
+            const exportPDF = useCallback(() => {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    doc.setFontSize(20);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Relly Financial Report', 14, 22);
+                    
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(`Generated: ${new Date().toLocaleDateString('en-US', { 
+                        month: 'long', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                    })}`, 14, 30);
+                    
+                    const tableData = transactions
+                        .slice()
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))
+                        .slice(0, 100)
+                        .map(tx => [
+                            tx.date || '',
+                            tx.amount > 0 ? 'Income' : 'Expense',
+                            formatMoney(tx.amount || 0),
+                            tx.title || '',
+                            tx.category || ''
+                        ]);
+                    
+                    doc.autoTable({
+                        startY: 35,
+                        head: [['Date', 'Type', 'Amount', 'Description', 'Category']],
+                        body: tableData,
+                        theme: 'striped',
+                        headStyles: { 
+                            fillColor: [0, 132, 74],
+                            fontSize: 10,
+                            fontStyle: 'bold'
+                        },
+                        styles: { 
+                            fontSize: 9,
+                            cellPadding: 3
+                        }
+                    });
+                    
+                    doc.save(`relly-report-${getTodayDate()}.pdf`);
+                } catch (error) {
+                    console.error('PDF Export Error:', error);
+                    alert('Error exporting PDF. Please try again.');
+                }
+            }, [transactions]);
+
+            const importCSV = useCallback((e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        try {
+                            const imported = results.data
+                                .filter(row => row.Date && row.Amount)
+                                .map(row => ({
+                                    date: row.Date,
+                                    amount: parseFloat(row.Amount) || 0,
+                                    title: row.Description || 'Imported Transaction',
+                                    category: row.Category || 'Uncategorized',
+                                    earner: row.Earner || 'Ray',
+                                    sourceAccountName: row.Account || 'Unknown',
+                                    user: auth.currentUser?.email || 'unknown',
+                                    createdAt: new Date(),
+                                    updatedAt: new Date()
+                                }));
+                            
+                            if (imported.length > 0) {
+                                onImport(imported);
+                            } else {
+                                alert('No valid transactions found in CSV file.');
+                            }
+                        } catch (error) {
+                            console.error('CSV Import Error:', error);
+                            alert('Error importing CSV. Please check file format.');
+                        }
+                        
+                        if (e.target) {
+                            e.target.value = '';
+                        }
+                    },
+                    error: (error) => {
+                        console.error('CSV Parse Error:', error);
+                        alert('Error parsing CSV file.');
+                    }
+                });
+            }, [onImport]);
+
+            return (
+                <div className="grid grid-cols-3 gap-3">
+                    <button 
+                        onClick={exportCSV} 
+                        className="py-2.5 px-4 bg-green-100 text-green-700 rounded-xl font-semibold text-sm hover:bg-green-200 transition-colors btn-hover"
+                    >
+                        📥 CSV
+                    </button>
+                    <button 
+                        onClick={exportPDF} 
+                        className="py-2.5 px-4 bg-red-100 text-red-700 rounded-xl font-semibold text-sm hover:bg-red-200 transition-colors btn-hover"
+                    >
+                        📄 PDF
+                    </button>
+                    <label className="py-2.5 px-4 bg-purple-100 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-200 transition-colors cursor-pointer text-center btn-hover">
+                        📤 Import
+                        <input 
+                            ref={fileInputRef}
+                            type="file" 
+                            accept=".csv" 
+                            onChange={importCSV}
+                            className="hidden" 
+                        />
+                    </label>
+                </div>
+            );
+        };
+
+        // ===== TRANSACTION MODAL COMPONENT =====
+        const TransactionModal = ({ isOpen, onClose, txToEdit, user, categories, accounts, onSuccess }) => {
+            const [formData, setFormData] = useState({
+                type: 'expense',
+                amount: '',
+                title: '',
+                category: '',
+                date: getTodayDate(),
+                earner: 'Ray',
+                accountId: ''
+            });
+            const [isSubmitting, setIsSubmitting] = useState(false);
+
+            useEffect(() => {
+                if (!isOpen) return;
+                
+                if (txToEdit) {
+                    setFormData({
+                        type: txToEdit.amount > 0 ? 'income' : 'expense',
+                        amount: Math.abs(txToEdit.amount).toString(),
+                        title: txToEdit.title || '',
+                        category: txToEdit.category || '',
+                        date: txToEdit.date || getTodayDate(),
+                        earner: txToEdit.earner || 'Ray',
+                        accountId: txToEdit.accountId || ''
+                    });
+                } else {
+                    const defaultAcc = accounts.find(a => a.type === 'joint')?.firebaseId || accounts[0]?.firebaseId || '';
+                    setFormData({
+                        type: 'expense',
+                        amount: '',
+                        title: '',
+                        category: '',
+                        date: getTodayDate(),
+                        earner: 'Ray',
+                        accountId: defaultAcc
+                    });
+                }
+            }, [txToEdit, accounts, isOpen]);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                
+                if (isSubmitting) return;
+                
+                const amount = parseFloat(formData.amount);
+                if (isNaN(amount) || amount <= 0) {
+                    alert('Please enter a valid amount.');
+                    return;
+                }
+                
+                if (!formData.title.trim()) {
+                    alert('Please enter a description.');
+                    return;
+                }
+                
+                if (!formData.category) {
+                    alert('Please select a category.');
+                    return;
+                }
+                
+                if (!formData.accountId) {
+                    alert('Please select an account.');
+                    return;
+                }
+                
+                setIsSubmitting(true);
+
+                try {
+                    const finalAmount = formData.type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
+                    const accName = accounts.find(a => a.firebaseId === formData.accountId)?.name || 'Unknown';
+                    
+                    const payload = {
+                        amount: finalAmount,
+                        title: formData.title.trim(),
+                        category: formData.category,
+                        date: formData.date,
+                        earner: formData.earner,
+                        accountId: formData.accountId,
+                        sourceAccountName: accName,
+                        user: user.email,
+                        updatedAt: new Date()
+                    };
+
+                    if (txToEdit?.firebaseId) {
+                        await db.collection('transactions').doc(txToEdit.firebaseId).update(payload);
+                        onSuccess('Transaction updated successfully');
+                    } else {
+                        await db.collection('transactions').add({
+                            ...payload,
+                            createdAt: new Date()
+                        });
+                        onSuccess('Transaction saved successfully');
+                    }
+                    
+                    onClose();
+                } catch (error) {
+                    console.error('Transaction Save Error:', error);
+                    alert('Error saving transaction: ' + error.message);
+                } finally {
+                    setIsSubmitting(false);
+                }
+            };
+
+            const handleDelete = async () => {
+                if (!txToEdit?.firebaseId) return;
+                
+                if (!confirm('Are you sure you want to delete this transaction?')) return;
+                
+                setIsSubmitting(true);
+                
+                try {
+                    await db.collection('transactions').doc(txToEdit.firebaseId).delete();
+                    onSuccess('Transaction deleted successfully');
+                    onClose();
+                } catch (error) {
+                    console.error('Transaction Delete Error:', error);
+                    alert('Error deleting transaction: ' + error.message);
+                } finally {
+                    setIsSubmitting(false);
+                }
+            };
+
+            const filteredCategories = useMemo(() => 
+                Object.keys(categories).filter(c => categories[c]?.type === formData.type).sort(),
+                [categories, formData.type]
+            );
+
+            if (!isOpen) return null;
+
+            return (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4" 
+                    onClick={onClose}
+                >
+                    <div className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"></div>
+                    <div 
+                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md animate-slide-up max-h-[90vh] overflow-y-auto" 
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 rounded-t-2xl z-10">
+                            <div className="flex justify-between items-center">
+                                <h2 className="text-2xl font-bold text-gray-900">
+                                    {txToEdit ? 'Edit' : 'New'} Transaction
+                                </h2>
+                                <button 
+                                    onClick={onClose}
+                                    type="button"
+                                    className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            <div className="flex gap-2">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setFormData({...formData, type: 'expense', category: ''})}
+                                    className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
+                                        formData.type === 'expense' 
+                                            ? 'bg-red-500 text-white shadow-lg' 
+                                            : 'bg-gray-100 text-gray-600'
+                                    }`}
+                                >
+                                    Expense
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setFormData({...formData, type: 'income', category: ''})}
+                                    className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
+                                        formData.type === 'income' 
+                                            ? 'bg-green-500 text-white shadow-lg' 
+                                            : 'bg-gray-100 text-gray-600'
+                                    }`}
+                                >
+                                    Income
+                                </button>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Amount</label>
+                                <input 
+                                    type="number"
+                                    step="0.01"
+                                    value={formData.amount}
+                                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-2xl font-bold focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                                    placeholder="0.00"
+                                    required
+                                    autoFocus
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                                <input 
+                                    type="text"
+                                    value={formData.title}
+                                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                                    placeholder="What was this for?"
+                                    required
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
+                                    <select 
+                                        value={formData.category}
+                                        onChange={(e) => setFormData({...formData, category: e.target.value})}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+                                        required
+                                        disabled={isSubmitting}
+                                    >
+                                        <option value="">Select...</option>
+                                        {filteredCategories.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Account</label>
+                                    <select 
+                                        value={formData.accountId}
+                                        onChange={(e) => setFormData({...formData, accountId: e.target.value})}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+                                        required
+                                        disabled={isSubmitting}
+                                    >
+                                        <option value="">Select...</option>
+                                        {accounts.map(acc => (
+                                            <option key={acc.firebaseId} value={acc.firebaseId}>{acc.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Who</label>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setFormData({...formData, earner: 'Ray'})}
+                                            disabled={isSubmitting}
+                                            className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
+                                                formData.earner === 'Ray' 
+                                                    ? 'bg-green-500 text-white' 
+                                                    : 'bg-gray-100 text-gray-600'
+                                            }`}
+                                        >
+                                            Ray
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setFormData({...formData, earner: 'Kelly'})}
+                                            disabled={isSubmitting}
+                                            className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
+                                                formData.earner === 'Kelly' 
+                                                    ? 'bg-green-500 text-white' 
+                                                    : 'bg-gray-100 text-gray-600'
+                                            }`}
+                                        >
+                                            Kelly
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Date</label>
+                                    <input 
+                                        type="date"
+                                        value={formData.date}
+                                        onChange={(e) => setFormData({...formData, date: e.target.value})}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+                                        required
+                                        disabled={isSubmitting}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button 
+                                    type="button" 
+                                    onClick={onClose}
+                                    disabled={isSubmitting}
+                                    className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-xl font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="flex-1 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSubmitting ? 'Saving...' : (txToEdit ? 'Update' : 'Save')}
+                                </button>
+                            </div>
+
+                            {txToEdit && (
+                                <button 
+                                    type="button" 
+                                    onClick={handleDelete}
+                                    disabled={isSubmitting}
+                                    className="w-full py-2 text-red-600 font-semibold text-sm hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Delete Transaction
+                                </button>
+                            )}
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // ===== CREDIT CARD TAB COMPONENT =====
+        const CreditCardTab = ({ cards, onAddCard, onUpdateCard, onDeleteCard }) => {
+            const [editing, setEditing] = useState(null);
+
+            const stats = useMemo(() => {
+                const totalLimit = cards.reduce((sum, c) => sum + (parseFloat(c.limit) || 0), 0);
+                const totalBalance = cards.reduce((sum, c) => sum + (parseFloat(c.balance) || 0), 0);
+                const avgUtil = totalLimit > 0 ? (totalBalance / totalLimit) * 100 : 0;
+                return { totalLimit, totalBalance, avgUtil };
+            }, [cards]);
+
+            const getUtilColor = (util) => {
+                if (util < 30) return 'text-green-600';
+                if (util < 70) return 'text-yellow-600';
+                return 'text-red-600';
+            };
+
+            const getUtilBg = (util) => {
+                if (util < 30) return 'bg-green-500';
+                if (util < 70) return 'bg-yellow-500';
+                return 'bg-red-500';
+            };
+
+            const handleSaveCard = async (e) => {
+                e.preventDefault();
+                
+                if (!editing.name.trim()) {
+                    alert('Please enter a card name.');
+                    return;
+                }
+                
+                const cardData = {
+                    name: editing.name.trim(),
+                    limit: parseFloat(editing.limit) || 0,
+                    balance: parseFloat(editing.balance) || 0,
+                    dueDay: parseInt(editing.dueDay) || 1,
+                    apr: parseFloat(editing.apr) || 0
+                };
+                
+                try {
+                    if (editing.firebaseId) {
+                        await onUpdateCard(editing.firebaseId, cardData);
+                    } else {
+                        await onAddCard(cardData);
+                    }
+                    setEditing(null);
+                } catch (error) {
+                    console.error('Card Save Error:', error);
+                    alert('Error saving card: ' + error.message);
+                }
+            };
+
+            return (
+                <div className="space-y-4 animate-fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="stat-card">
+                            <div className="text-xs font-bold text-gray-500 uppercase mb-1">Total Limit</div>
+                            <div className="text-2xl font-bold text-gray-900">{formatMoney(stats.totalLimit)}</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="text-xs font-bold text-gray-500 uppercase mb-1">Total Balance</div>
+                            <div className="text-2xl font-bold text-red-600">{formatMoney(stats.totalBalance)}</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="text-xs font-bold text-gray-500 uppercase mb-1">Avg Utilization</div>
+                            <div className={`text-2xl font-bold ${getUtilColor(stats.avgUtil)}`}>
+                                {formatPercent(stats.avgUtil)}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-gray-900">Credit Cards</h3>
+                            <button 
+                                onClick={() => setEditing({name:'', limit:'', balance:'', dueDay:'15', apr:''})}
+                                className="px-4 py-2 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 transition-colors btn-hover"
+                            >
+                                + Add Card
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {cards.map(card => {
+                                const limit = parseFloat(card.limit) || 0;
+                                const balance = parseFloat(card.balance) || 0;
+                                const util = limit > 0 ? (balance / limit) * 100 : 0;
+                                const avail = limit - balance;
+                                
+                                return (
+                                    <div key={card.firebaseId} className="border border-gray-200 rounded-xl p-4 hover:border-green-500 transition-colors">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 text-lg">{card.name}</h4>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Due: Day {card.dueDay} • APR: {card.apr}%
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={() => setEditing({...card})}
+                                                    className="text-green-600 text-xs font-semibold hover:text-green-700"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        if (confirm(`Delete ${card.name}?`)) {
+                                                            onDeleteCard(card.firebaseId);
+                                                        }
+                                                    }}
+                                                    className="text-red-600 text-xs font-semibold hover:text-red-700"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-3 mb-3">
+                                            <div>
+                                                <div className="text-xs text-gray-500">Balance</div>
+                                                <div className="font-bold text-gray-900">{formatMoney(balance)}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-gray-500">Limit</div>
+                                                <div className="font-bold text-gray-900">{formatMoney(limit)}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-gray-500">Available</div>
+                                                <div className="font-bold text-green-600">{formatMoney(avail)}</div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex justify-between mb-1">
+                                                <span className="text-xs text-gray-500">Utilization</span>
+                                                <span className={`text-sm font-bold ${getUtilColor(util)}`}>
+                                                    {formatPercent(util)}
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                                <div 
+                                                    className={`h-full rounded-full transition-all duration-300 ${getUtilBg(util)}`}
+                                                    style={{width: `${Math.min(util, 100)}%`}}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {cards.length === 0 && (
+                                <div className="text-center py-12 text-gray-500">
+                                    <div className="text-6xl mb-4">💳</div>
+                                    <p className="font-medium mb-3">No credit cards added</p>
+                                    <button 
+                                        onClick={() => setEditing({name:'', limit:'', balance:'', dueDay:'15', apr:''})}
+                                        className="text-green-600 font-semibold hover:text-green-700"
+                                    >
+                                        Add your first card
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {editing && (
+                        <div 
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4" 
+                            onClick={() => setEditing(null)}
+                        >
+                            <div className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"></div>
+                            <div 
+                                className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md animate-slide-up" 
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <h3 className="text-xl font-bold mb-4 text-gray-900">
+                                    {editing.firebaseId ? 'Edit' : 'Add'} Credit Card
+                                </h3>
+                                <form onSubmit={handleSaveCard} className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Card Name</label>
+                                        <input 
+                                            type="text" 
+                                            value={editing.name} 
+                                            onChange={(e) => setEditing({...editing, name: e.target.value})} 
+                                            placeholder="e.g., Chase Sapphire" 
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" 
+                                            required 
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Credit Limit</label>
+                                            <input 
+                                                type="number" 
+                                                step="0.01"
+                                                value={editing.limit} 
+                                                onChange={(e) => setEditing({...editing, limit: e.target.value})} 
+                                                placeholder="10000" 
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" 
+                                                required 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Current Balance</label>
+                                            <input 
+                                                type="number" 
+                                                step="0.01"
+                                                value={editing.balance} 
+                                                onChange={(e) => setEditing({...editing, balance: e.target.value})} 
+                                                placeholder="2500" 
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" 
+                                                required 
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Due Day (1-31)</label>
+                                            <input 
+                                                type="number" 
+                                                min="1" 
+                                                max="31"
+                                                value={editing.dueDay} 
+                                                onChange={(e) => setEditing({...editing, dueDay: e.target.value})} 
+                                                placeholder="15" 
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" 
+                                                required 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">APR (%)</label>
+                                            <input 
+                                                type="number" 
+                                                step="0.01"
+                                                value={editing.apr} 
+                                                onChange={(e) => setEditing({...editing, apr: e.target.value})} 
+                                                placeholder="19.99" 
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" 
+                                                required 
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3 pt-2">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setEditing(null)}
+                                            className="flex-1 py-3 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            type="submit"
+                                            className="flex-1 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors"
+                                        >
+                                            {editing.firebaseId ? 'Update' : 'Add'} Card
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ===== SETTINGS TAB COMPONENT =====
+        const SettingsTab = ({ categories, accounts, onAddCategory, onDeleteCategory, onAddAccount, onDeleteAccount }) => {
+            const [newCat, setNewCat] = useState({name: '', type: 'expense'});
+            const [newAcc, setNewAcc] = useState({name: '', type: 'joint', initialBalance: ''});
+
+            const handleAddCategory = (e) => {
+                e.preventDefault();
+                if (!newCat.name.trim()) {
+                    alert('Please enter a category name.');
+                    return;
+                }
+                onAddCategory(newCat.name.trim(), newCat.type);
+                setNewCat({name:'', type:'expense'});
+            };
+
+            const handleAddAccount = (e) => {
+                e.preventDefault();
+                if (!newAcc.name.trim()) {
+                    alert('Please enter an account name.');
+                    return;
+                }
+                onAddAccount({
+                    name: newAcc.name.trim(),
+                    type: newAcc.type,
+                    initialBalance: parseFloat(newAcc.initialBalance) || 0
+                });
+                setNewAcc({name:'', type:'joint', initialBalance:''});
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto space-y-4 animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <h3 className="text-lg font-bold mb-4 text-gray-900">Categories</h3>
+                        <form onSubmit={handleAddCategory} className="flex gap-2 mb-4">
+                            <input 
+                                type="text" 
+                                value={newCat.name} 
+                                onChange={(e) => setNewCat({...newCat, name: e.target.value})} 
+                                placeholder="Category name" 
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" 
+                            />
+                            <select 
+                                value={newCat.type} 
+                                onChange={(e) => setNewCat({...newCat, type: e.target.value})} 
+                                className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+                            >
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                            <button 
+                                type="submit" 
+                                className="px-6 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors btn-hover"
+                            >
+                                Add
+                            </button>
+                        </form>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {Object.keys(categories).sort().map(cat => (
+                                <div key={cat} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                    <div>
+                                        <span className="font-semibold text-gray-900">{cat}</span>
+                                        <span className="text-xs text-gray-500 uppercase ml-2">
+                                            {categories[cat]?.type || 'expense'}
+                                        </span>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            if (confirm(`Delete category "${cat}"?`)) {
+                                                onDeleteCategory(cat);
+                                            }
+                                        }}
+                                        className="text-red-600 text-sm font-semibold hover:text-red-700"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            ))}
+                            {Object.keys(categories).length === 0 && (
+                                <div className="col-span-2 text-center py-8 text-gray-500">
+                                    No categories yet. Add your first one above.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <h3 className="text-lg font-bold mb-4 text-gray-900">Accounts</h3>
+                        <form onSubmit={handleAddAccount} className="space-y-3 mb-4">
+                            <input 
+                                type="text" 
+                                value={newAcc.name} 
+                                onChange={(e) => setNewAcc({...newAcc, name: e.target.value})} 
+                                placeholder="Account name" 
+                                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" 
+                            />
+                            <div className="grid grid-cols-2 gap-3">
+                                <select 
+                                    value={newAcc.type} 
+                                    onChange={(e) => setNewAcc({...newAcc, type: e.target.value})} 
+                                    className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+                                >
+                                    <option value="joint">Joint</option>
+                                    <option value="ray">Ray</option>
+                                    <option value="kelly">Kelly</option>
+                                </select>
+                                <input 
+                                    type="number" 
+                                    step="0.01" 
+                                    value={newAcc.initialBalance} 
+                                    onChange={(e) => setNewAcc({...newAcc, initialBalance: e.target.value})} 
+                                    placeholder="Initial balance" 
+                                    className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" 
+                                />
+                            </div>
+                            <button 
+                                type="submit" 
+                                className="w-full py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors btn-hover"
+                            >
+                                Add Account
+                            </button>
+                        </form>
+                        <div className="space-y-2">
+                            {accounts.map(acc => (
+                                <div key={acc.firebaseId} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                    <div>
+                                        <span className="font-semibold text-gray-900">{acc.name}</span>
+                                        <span className="text-xs text-gray-500 uppercase ml-2">{acc.type}</span>
+                                        <span className="text-sm text-gray-600 ml-2">
+                                            {formatMoney(acc.initialBalance || 0)}
+                                        </span>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            if (confirm(`Delete account "${acc.name}"?`)) {
+                                                onDeleteAccount(acc.firebaseId);
+                                            }
+                                        }}
+                                        className="text-red-600 text-sm font-semibold hover:text-red-700"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            ))}
+                            {accounts.length === 0 && (
+                                <div className="text-center py-8 text-gray-500">
+                                    No accounts yet. Add your first one above.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ===== MAIN APP COMPONENT =====
+        const App = ({ user, logout }) => {
+            const [activeTab, setActiveTab] = useState('home');
+            const [modalOpen, setModalOpen] = useState(false);
+            const [editTx, setEditTx] = useState(null);
+            const [toast, setToast] = useState(null);
+
+            const [transactions, setTransactions] = useState([]);
+            const [categories, setCategories] = useState({});
+            const [accounts, setAccounts] = useState([]);
+            const [creditCards, setCreditCards] = useState([]);
+
+            // Firebase listeners
+            useEffect(() => {
+                if (!db) return;
+                
+                const unsubTx = db.collection('transactions').onSnapshot(
+                    snapshot => {
+                        const data = snapshot.docs.map(doc => ({
+                            firebaseId: doc.id,
+                            ...doc.data()
+                        }));
+                        setTransactions(data);
+                    },
+                    error => console.error('Transactions listener error:', error)
+                );
+                
+                const unsubCat = db.collection('categories').onSnapshot(
+                    snapshot => {
+                        const data = {};
+                        snapshot.docs.forEach(doc => {
+                            data[doc.id] = doc.data();
+                        });
+                        setCategories(data);
+                    },
+                    error => console.error('Categories listener error:', error)
+                );
+                
+                const unsubAcc = db.collection('accounts').onSnapshot(
+                    snapshot => {
+                        const data = snapshot.docs.map(doc => ({
+                            firebaseId: doc.id,
+                            ...doc.data()
+                        }));
+                        setAccounts(data);
+                    },
+                    error => console.error('Accounts listener error:', error)
+                );
+                
+                const unsubCards = db.collection('creditCards').onSnapshot(
+                    snapshot => {
+                        const data = snapshot.docs.map(doc => ({
+                            firebaseId: doc.id,
+                            ...doc.data()
+                        }));
+                        setCreditCards(data);
+                    },
+                    error => console.error('Credit cards listener error:', error)
+                );
+
+                return () => {
+                    unsubTx();
+                    unsubCat();
+                    unsubAcc();
+                    unsubCards();
+                };
+            }, []);
+
+            // Calculate stats
+            const stats = useMemo(() => {
+                const income = transactions
+                    .filter(t => t.amount > 0)
+                    .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+                
+                const expenses = transactions
+                    .filter(t => t.amount < 0)
+                    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount) || 0), 0);
+                
+                const byCategory = {};
+                transactions.forEach(t => {
+                    if (t.amount < 0) {
+                        const cat = t.category || 'Uncategorized';
+                        byCategory[cat] = (byCategory[cat] || 0) + Math.abs(parseFloat(t.amount) || 0);
+                    }
+                });
+
+                return { 
+                    income, 
+                    expenses, 
+                    net: income - expenses, 
+                    byCategory 
+                };
+            }, [transactions]);
+
+            // Handler functions
+            const onAddCategory = useCallback(async (name, type) => {
+                try {
+                    await db.collection('categories').doc(name).set({ type });
+                    setToast({ message: 'Category added successfully', type: 'success' });
+                } catch (error) {
+                    console.error('Add category error:', error);
+                    setToast({ message: 'Error adding category', type: 'error' });
+                }
+            }, []);
+            
+            const onDeleteCategory = useCallback(async (name) => {
+                try {
+                    await db.collection('categories').doc(name).delete();
+                    setToast({ message: 'Category deleted successfully', type: 'success' });
+                } catch (error) {
+                    console.error('Delete category error:', error);
+                    setToast({ message: 'Error deleting category', type: 'error' });
+                }
+            }, []);
+            
+            const onAddAccount = useCallback(async (acc) => {
+                try {
+                    await db.collection('accounts').add(acc);
+                    setToast({ message: 'Account added successfully', type: 'success' });
+                } catch (error) {
+                    console.error('Add account error:', error);
+                    setToast({ message: 'Error adding account', type: 'error' });
+                }
+            }, []);
+            
+            const onDeleteAccount = useCallback(async (id) => {
+                try {
+                    await db.collection('accounts').doc(id).delete();
+                    setToast({ message: 'Account deleted successfully', type: 'success' });
+                } catch (error) {
+                    console.error('Delete account error:', error);
+                    setToast({ message: 'Error deleting account', type: 'error' });
+                }
+            }, []);
+
+            const onAddCard = useCallback(async (card) => {
+                try {
+                    await db.collection('creditCards').add(card);
+                    setToast({ message: 'Card added successfully', type: 'success' });
+                } catch (error) {
+                    console.error('Add card error:', error);
+                    setToast({ message: 'Error adding card', type: 'error' });
+                }
+            }, []);
+            
+            const onUpdateCard = useCallback(async (id, data) => {
+                try {
+                    await db.collection('creditCards').doc(id).update(data);
+                    setToast({ message: 'Card updated successfully', type: 'success' });
+                } catch (error) {
+                    console.error('Update card error:', error);
+                    setToast({ message: 'Error updating card', type: 'error' });
+                }
+            }, []);
+            
+            const onDeleteCard = useCallback(async (id) => {
+                try {
+                    await db.collection('creditCards').doc(id).delete();
+                    setToast({ message: 'Card deleted successfully', type: 'success' });
+                } catch (error) {
+                    console.error('Delete card error:', error);
+                    setToast({ message: 'Error deleting card', type: 'error' });
+                }
+            }, []);
+
+            const handleImport = useCallback(async (txs) => {
+                try {
+                    for (const tx of txs) {
+                        await db.collection('transactions').add(tx);
+                    }
+                    setToast({ message: `Successfully imported ${txs.length} transactions`, type: 'success' });
+                } catch (error) {
+                    console.error('Import error:', error);
+                    setToast({ message: 'Error importing transactions', type: 'error' });
+                }
+            }, []);
+
+            const handleTransactionSuccess = useCallback((message) => {
+                setToast({ message, type: 'success' });
+            }, []);
+
+            const sortedTransactions = useMemo(() => 
+                transactions.slice().sort((a, b) => new Date(b.date) - new Date(a.date)),
+                [transactions]
+            );
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+                    {toast && (
+                        <Toast 
+                            message={toast.message} 
+                            type={toast.type} 
+                            onClose={() => setToast(null)} 
+                        />
+                    )}
+
+                    {/* Header */}
+                    <div className="gradient-brand shadow-lg sticky top-0 z-20">
+                        <div className="max-w-7xl mx-auto px-4 py-4">
+                            <div className="flex justify-between items-center mb-3">
+                                <div>
+                                    <h1 className="text-3xl font-black text-white tracking-tight">Relly</h1>
+                                    <p className="text-xs text-white text-opacity-90 font-medium mt-0.5">
+                                        Financial Command Center
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={logout}
+                                    className="text-sm text-white text-opacity-90 hover:text-white font-semibold transition-colors"
+                                >
+                                    Sign Out
+                                </button>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <LiveClock />
+                                <div className="text-right">
+                                    <div className="text-xs text-white text-opacity-90 font-medium">Net Worth</div>
+                                    <div className="text-2xl font-black text-white">{formatMoney(stats.net)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="max-w-7xl mx-auto px-4 py-6 pb-24">
+                        {activeTab === 'home' && (
+                            <div className="space-y-6 animate-fade-in">
+                                {/* Stats Cards */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="stat-card gradient-success text-white">
+                                        <div className="text-xs font-bold uppercase opacity-90 mb-1">Income</div>
+                                        <div className="text-3xl font-black">{formatMoney(stats.income)}</div>
+                                    </div>
+                                    <div className="stat-card gradient-danger text-white">
+                                        <div className="text-xs font-bold uppercase opacity-90 mb-1">Expenses</div>
+                                        <div className="text-3xl font-black">{formatMoney(stats.expenses)}</div>
+                                    </div>
+                                    <div className="stat-card gradient-purple text-white">
+                                        <div className="text-xs font-bold uppercase opacity-90 mb-1">Net</div>
+                                        <div className="text-3xl font-black">{formatMoney(stats.net)}</div>
+                                    </div>
+                                </div>
+
+                                {/* Data Management */}
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                                    <h3 className="text-lg font-bold mb-4 text-gray-900">Data Management</h3>
+                                    <DataManagement 
+                                        transactions={transactions} 
+                                        onImport={handleImport} 
+                                    />
+                                </div>
+
+                                {/* Spending Chart */}
+                                {Object.keys(stats.byCategory).length > 0 && (
+                                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                                        <h3 className="text-lg font-bold mb-4 text-gray-900">Spending by Category</h3>
+                                        <DoughnutChart 
+                                            data={stats.byCategory}
+                                            colors={['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899']}
+                                            centerText={formatMoney(stats.expenses)}
+                                            centerSubtext="Total Spent"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Recent Transactions */}
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                                    <h3 className="text-lg font-bold mb-4 text-gray-900">Recent Transactions</h3>
+                                    <div className="space-y-2">
+                                        {sortedTransactions.slice(0, 15).map(tx => (
+                                            <div 
+                                                key={tx.firebaseId} 
+                                                onClick={() => { 
+                                                    setEditTx(tx); 
+                                                    setModalOpen(true); 
+                                                }} 
+                                                className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-green-50 cursor-pointer transition-colors"
+                                            >
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-semibold text-gray-900 truncate">
+                                                        {tx.title || 'Untitled'}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mt-0.5">
+                                                        {tx.category || 'Uncategorized'} • {tx.date || 'No date'}
+                                                    </div>
+                                                </div>
+                                                <div className={`font-bold ml-4 ${
+                                                    tx.amount > 0 ? 'text-green-600' : 'text-red-600'
+                                                }`}>
+                                                    {tx.amount > 0 ? '+' : ''}{formatMoney(tx.amount || 0)}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {transactions.length === 0 && (
+                                            <div className="text-center py-12 text-gray-500">
+                                                <div className="text-6xl mb-4">💰</div>
+                                                <p className="font-medium mb-2">No transactions yet</p>
+                                                <p className="text-sm">Click the + button to add your first transaction</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'cards' && (
+                            <CreditCardTab 
+                                cards={creditCards}
+                                onAddCard={onAddCard}
+                                onUpdateCard={onUpdateCard}
+                                onDeleteCard={onDeleteCard}
+                            />
+                        )}
+
+                        {activeTab === 'settings' && (
+                            <SettingsTab 
+                                categories={categories}
+                                accounts={accounts}
+                                onAddCategory={onAddCategory}
+                                onDeleteCategory={onDeleteCategory}
+                                onAddAccount={onAddAccount}
+                                onDeleteAccount={onDeleteAccount}
+                            />
+                        )}
+                    </div>
+
+                    {/* FAB */}
+                    <button 
+                        onClick={() => { 
+                            setEditTx(null); 
+                            setModalOpen(true); 
+                        }}
+                        className="fixed bottom-20 right-6 w-16 h-16 gradient-brand text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"
+                        aria-label="Add transaction"
+                    >
+                        <span className="text-3xl font-bold leading-none">+</span>
+                    </button>
+
+                    {/* Bottom Navigation */}
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-30">
+                        <div className="max-w-7xl mx-auto flex justify-around items-center h-16">
+                            <button 
+                                onClick={() => setActiveTab('home')} 
+                                className="flex flex-col items-center gap-1 flex-1 py-2"
+                            >
+                                <span className="text-2xl">{activeTab === 'home' ? '🏠' : '🏘️'}</span>
+                                <span className={`text-xs font-semibold ${
+                                    activeTab === 'home' ? 'text-green-600' : 'text-gray-500'
+                                }`}>
+                                    Home
+                                </span>
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('cards')} 
+                                className="flex flex-col items-center gap-1 flex-1 py-2"
+                            >
+                                <span className="text-2xl">{activeTab === 'cards' ? '💳' : '💠'}</span>
+                                <span className={`text-xs font-semibold ${
+                                    activeTab === 'cards' ? 'text-green-600' : 'text-gray-500'
+                                }`}>
+                                    Cards
+                                </span>
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('settings')} 
+                                className="flex flex-col items-center gap-1 flex-1 py-2"
+                            >
+                                <span className="text-2xl">{activeTab === 'settings' ? '⚙️' : '⚙'}</span>
+                                <span className={`text-xs font-semibold ${
+                                    activeTab === 'settings' ? 'text-green-600' : 'text-gray-500'
+                                }`}>
+                                    Settings
+                                </span>
+                            </button>
+                        </div>
+                    </nav>
+
+                    {/* Transaction Modal */}
+                    <TransactionModal 
+                        isOpen={modalOpen}
+                        onClose={() => { 
+                            setModalOpen(false); 
+                            setEditTx(null); 
+                        }}
+                        txToEdit={editTx}
+                        user={user}
+                        categories={categories}
+                        accounts={accounts}
+                        onSuccess={handleTransactionSuccess}
+                    />
+                </div>
+            );
+        };
+
+        // ===== LOGIN SCREEN COMPONENT =====
+        const LoginScreen = () => {
+            const [isLoading, setIsLoading] = useState(false);
+
+            const handleLogin = async () => {
+                if (isLoading) return;
+                
+                setIsLoading(true);
+                try {
+                    await auth.signInWithPopup(googleProvider);
+                } catch (error) {
+                    console.error('Login error:', error);
+                    alert('Login failed: ' + error.message);
+                    setIsLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center gradient-brand p-6">
+                    <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mb-8 shadow-2xl animate-fade-in">
+                        <span className="text-green-600 text-5xl font-black">R</span>
+                    </div>
+                    <h1 className="text-5xl font-black text-white mb-3 animate-fade-in">Relly</h1>
+                    <p className="text-white text-opacity-90 mb-12 text-center max-w-sm font-medium animate-fade-in">
+                        Your professional financial command center
+                    </p>
+                    <button 
+                        onClick={handleLogin}
+                        disabled={isLoading}
+                        className="w-full max-w-sm bg-white text-gray-900 font-bold py-4 px-6 rounded-2xl shadow-2xl hover:shadow-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed animate-fade-in"
+                    >
+                        {isLoading ? (
+                            <>
+                                <div className="loading-spinner w-6 h-6 border-2"></div>
+                                <span>Signing in...</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-3xl">🔐</span>
+                                <span>Sign in with Google</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            );
+        };
+
+        // ===== ROOT COMPONENT =====
+        const Root = () => {
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                if (!auth) {
+                    setLoading(false);
+                    return;
+                }
+                
+                const unsubscribe = auth.onAuthStateChanged(
+                    (u) => {
+                        setUser(u);
+                        setLoading(false);
+                    },
+                    (error) => {
+                        console.error('Auth state error:', error);
+                        setLoading(false);
+                    }
+                );
+                
+                return () => unsubscribe();
+            }, []);
+
+            if (loading) {
+                return <Loading />;
+            }
+
+            return user ? (
+                <App user={user} logout={() => auth.signOut()} />
+            ) : (
+                <LoginScreen />
+            );
+        };
+
+        // ===== RENDER =====
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Root />);
+    </script>
+</body>
+</html>
