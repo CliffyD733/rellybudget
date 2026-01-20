@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Relly v12 | The Command Center</title>
+  <title>Relly v13 | Complete</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -28,12 +28,10 @@
             zinc: { 750: '#2d2d30', 850: '#202023', 900: '#18181b', 950: '#09090b' },
             emerald: { 400: '#34d399', 500: '#10b981', 600: '#059669' },
             rose: { 400: '#fb7185', 500: '#f43f5e', 600: '#e11d48' },
-            amber: { 400: '#fbbf24', 500: '#f59e0b' }
           },
           animation: {
             'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
             'fade-in': 'fadeIn 0.2s ease-out',
-            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
           },
           keyframes: {
             slideUp: { '0%': { transform: 'translateY(100%)' }, '100%': { transform: 'translateY(0)' } },
@@ -46,19 +44,13 @@
 
   <style>
     body { background-color: #F8FAFC; color: #18181b; -webkit-tap-highlight-color: transparent; }
-    
-    /* High-End Glassmorphism */
     .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
     .glass-dark { background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); color: white; }
-    
-    /* UX Hygiene */
     .no-scrollbar::-webkit-scrollbar { display: none; }
-    input, select, textarea { font-size: 16px !important; border-radius: 12px; } /* No Zoom */
+    input, select, textarea { font-size: 16px !important; border-radius: 12px; }
     .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     .pt-safe { padding-top: env(safe-area-inset-top); }
-    
-    /* Touch Physics */
-    .btn-press { transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1); }
+    .btn-press { transition: transform 0.1s; }
     .btn-press:active { transform: scale(0.96); }
   </style>
 </head>
@@ -72,24 +64,26 @@
         pieChart: `<path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path>`,
         car: `<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><circle cx="17" cy="17" r="2"></circle>`,
         creditCard: `<rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line>`,
+        repeat: `<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>`,
         settings: `<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>`,
         plus: `<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>`,
+        x: `<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>`,
+        search: `<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>`,
         arrowRight: `<line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>`,
         trendingUp: `<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>`,
         trendingDown: `<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>`,
-        alert: `<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>`,
         trash: `<polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>`,
-        logOut: `<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line>`,
-        download: `<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>`
+        calendar: `<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>`,
+        alert: `<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>`
       };
-      return React.createElement('svg', { xmlns:"http://www.w3.org/2000/svg", width:size, height:size, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", className, dangerouslySetInnerHTML:{__html: i[name]||''} });
+      return React.createElement('svg', { xmlns:"http://www.w3.org/2000/svg", width:size, height:size, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", className, onClick, dangerouslySetInnerHTML:{__html: i[name]||''} });
     };
   </script>
 
   <script type="text/babel">
     const { useState, useEffect, useMemo, createContext, useContext } = React;
 
-    // --- FIREBASE INIT ---
+    // --- CONFIG ---
     const firebaseConfig = {
       apiKey: "AIzaSyBQ2HrvtpMEW6ZvxjE--LWk2crbOfdNlHM",
       authDomain: "household-budget-app-4aba1.firebaseapp.com",
@@ -103,36 +97,12 @@
     const auth = firebase.auth();
     const googleProvider = new firebase.auth.GoogleAuthProvider();
 
-    // --- UTILS ---
     const Format = {
       money: (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0),
       date: (d) => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(d)),
     };
 
-    // --- TOAST SYSTEM ---
-    const ToastContext = createContext();
-    const ToastProvider = ({ children }) => {
-      const [toasts, setToasts] = useState([]);
-      const addToast = (msg, type = 'success') => {
-        const id = Date.now();
-        setToasts(prev => [...prev, { id, msg, type }]);
-        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 2500);
-      };
-      return (
-        <ToastContext.Provider value={addToast}>
-          {children}
-          <div className="fixed top-safe left-0 right-0 z-[100] flex flex-col items-center gap-2 pointer-events-none p-4">
-            {toasts.map(t => (
-              <div key={t.id} className={`pointer-events-auto px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-slide-up ${t.type === 'error' ? 'bg-rose-600 text-white' : 'bg-zinc-900 text-white'}`}>
-                <span className="font-bold text-sm">{t.msg}</span>
-              </div>
-            ))}
-          </div>
-        </ToastContext.Provider>
-      );
-    };
-
-    // --- CHARTING ---
+    // --- CHARTS ---
     const Sparkline = ({ points, color = "#ffffff" }) => {
        if(!points || points.length < 2) return null;
        const min = Math.min(...points); const max = Math.max(...points); const range = max - min || 1;
@@ -140,28 +110,36 @@
        return <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible" preserveAspectRatio="none"><polyline points={path} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" /></svg>;
     };
 
-    const BarChart = ({ data, color = "#52525b", height = 120 }) => {
+    const BarChart = ({ data, color = "#52525b", height = 120, onClick }) => {
        if(!data || data.length === 0) return <div className="h-32 flex items-center justify-center text-zinc-400 text-xs">No Data</div>;
        const max = Math.max(...data.map(d => d.value));
        return (
          <div className="flex items-end gap-1 w-full mt-2" style={{height: height}}>
             {data.map((d, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center group relative">
+              <div key={i} onClick={() => onClick && onClick(d)} className="flex-1 flex flex-col items-center group relative cursor-pointer active:scale-95 transition-transform">
                  <div className="w-full rounded-t-sm transition-all duration-300" style={{ height: `${Math.max((d.value / max) * 100, 2)}%`, backgroundColor: color, opacity: 0.8 }}></div>
                  <div className="text-[10px] text-zinc-400 mt-2 truncate w-full text-center">{d.label}</div>
-                 <div className="absolute bottom-full mb-1 bg-zinc-900 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-20 pointer-events-none font-bold">{Format.money(d.value)}</div>
+                 <div className="absolute bottom-full mb-1 bg-zinc-900 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 font-bold z-20 pointer-events-none">{Format.money(d.value)}</div>
               </div>
             ))}
          </div>
        );
     };
 
-    // --- LOGIC ---
+    // --- CONTEXT ---
     const AppContext = createContext();
+    const ToastContext = createContext();
+
+    const ToastProvider = ({ children }) => {
+      const [toasts, setToasts] = useState([]);
+      const addToast = (msg, type='success') => { const id=Date.now(); setToasts(p=>[...p,{id,msg,type}]); setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),2500); };
+      return <ToastContext.Provider value={addToast}>{children}<div className="fixed top-safe left-0 right-0 z-[100] flex flex-col items-center gap-2 p-4 pointer-events-none">{toasts.map(t=><div key={t.id} className={`pointer-events-auto px-6 py-3 rounded-full shadow-2xl animate-slide-up font-bold text-sm text-white ${t.type==='error'?'bg-rose-600':'bg-zinc-900'}`}>{t.msg}</div>)}</div></ToastContext.Provider>;
+    };
+
     const AppProvider = ({ children }) => {
       const [user, setUser] = useState(null);
       const [loading, setLoading] = useState(true);
-      const [data, setData] = useState({ transactions: [], accounts: [], vehicles: [], rules: [] });
+      const [data, setData] = useState({ transactions: [], accounts: [], vehicles: [], rules: [], bills: [] });
       const [modal, setModal] = useState(null);
       const toast = useContext(ToastContext);
 
@@ -173,7 +151,8 @@
           db.collection('transactions').orderBy('date', 'desc').limit(500).onSnapshot(s => setData(p => ({ ...p, transactions: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
           db.collection('accounts').onSnapshot(s => setData(p => ({ ...p, accounts: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
           db.collection('vehicles').onSnapshot(s => setData(p => ({ ...p, vehicles: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
-          db.collection('rules').onSnapshot(s => setData(p => ({ ...p, rules: s.docs.map(d => ({ id: d.id, ...d.data() })) })))
+          db.collection('rules').onSnapshot(s => setData(p => ({ ...p, rules: s.docs.map(d => ({ id: d.id, ...d.data() })) }))),
+          db.collection('bills').onSnapshot(s => setData(p => ({ ...p, bills: s.docs.map(d => ({ id: d.id, ...d.data() })) })))
         ];
         setLoading(false);
         return () => unsubs.forEach(u => u());
@@ -186,53 +165,56 @@
         closeModal: () => setModal(null),
         saveTransaction: async (tx) => {
            try {
-             // HARD-CODED: Single Source Logic
              if (tx.category === 'Payment' && tx.toAccountId) {
-                const joint = data.accounts.find(a => a.type === 'asset'); 
-                if (!joint) { toast('Error: No Joint Checking found', 'error'); return; }
+                const joint = data.accounts.find(a => a.type === 'asset');
+                if (!joint) { toast('Create Joint Checking first', 'error'); return; }
                 const batch = db.batch();
                 batch.set(db.collection('transactions').doc(), { ...tx, amount: -Math.abs(tx.amount), category: 'Payment Out', accountId: joint.id, createdAt: new Date() });
                 batch.set(db.collection('transactions').doc(), { ...tx, amount: Math.abs(tx.amount), category: 'Payment In', accountId: tx.toAccountId, createdAt: new Date() });
                 await batch.commit();
-                toast('Payment Recorded');
+                toast('Payment Complete');
                 return;
              }
-             if(!tx.id && tx.description && tx.category && !['Uncategorized','Payment'].includes(tx.category)) {
+             if(!tx.id && tx.description && !['Uncategorized','Payment'].includes(tx.category)) {
                 const exists = data.rules.find(r => r.merchant === tx.description);
                 if(!exists) db.collection('rules').add({ merchant: tx.description, category: tx.category });
              }
              if (tx.id) { await db.collection('transactions').doc(tx.id).update(tx); toast('Updated'); } 
              else { await db.collection('transactions').add({ ...tx, createdAt: new Date() }); toast('Saved'); }
-           } catch (e) { toast('Error saving', 'error'); }
+           } catch (e) { toast('Error', 'error'); }
         },
         deleteTransaction: async (id) => { await db.collection('transactions').doc(id).delete(); toast('Deleted'); },
         saveAccount: async (acc) => { if(acc.id) await db.collection('accounts').doc(acc.id).update(acc); else await db.collection('accounts').add(acc); toast('Account Saved'); },
         deleteAccount: async (id) => { await db.collection('accounts').doc(id).delete(); toast('Deleted'); },
         saveVehicle: async (veh) => { if(veh.id) await db.collection('vehicles').doc(veh.id).update(veh); else await db.collection('vehicles').add(veh); toast('Vehicle Saved'); },
-        deleteRule: async (id) => { await db.collection('rules').doc(id).delete(); toast('Rule Deleted'); },
-        exportData: () => {
-           const headers = ["Date","Description","Amount","Category","Account"];
-           const rows = data.transactions.map(t => [t.date,`"${t.description}"`,t.amount,t.category,data.accounts.find(a=>a.id===t.accountId)?.name].join(","));
-           const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8,"+ [headers.join(","),...rows].join("\n")); link.download = "relly_export.csv"; document.body.appendChild(link); link.click();
-           toast('Export Ready');
-        }
+        saveBill: async (bill) => { if(bill.id) await db.collection('bills').doc(bill.id).update(bill); else await db.collection('bills').add(bill); toast('Bill Saved'); },
+        deleteBill: async (id) => { await db.collection('bills').doc(id).delete(); toast('Bill Deleted'); }
       };
       return <AppContext.Provider value={{ user, loading, data, modal, actions }}>{children}</AppContext.Provider>;
     };
 
-    // --- MODAL ---
+    // --- MODALS & COMPONENTS ---
+    const Modal = ({ children, onClose }) => (
+       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm pointer-events-auto transition-opacity" onClick={onClose} />
+          <div className="relative bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl pointer-events-auto p-6 animate-slide-up pb-safe max-h-[90vh] overflow-y-auto">{children}</div>
+       </div>
+    );
+
+    // Add/Edit Transaction Modal
     const AddModal = () => {
        const { modal, actions, data } = useContext(AppContext);
-       if (!modal) return null;
-       const { prefill } = modal;
+       if (!modal || modal.type !== 'add') return null;
+       const { prefill } = modal.props || {};
+       
        const [mode, setMode] = useState(prefill?.mode || 'expense');
        const [amount, setAmount] = useState(prefill?.amount ? Math.abs(prefill.amount) : '');
-       const [desc, setDesc] = useState('');
+       const [desc, setDesc] = useState(prefill?.description || '');
        const [accId, setAccId] = useState(prefill?.accountId || '');
-       const [cat, setCat] = useState('');
-       const [vehId, setVehId] = useState('');
-       const [odo, setOdo] = useState('');
-       const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+       const [cat, setCat] = useState(prefill?.category || '');
+       const [vehId, setVehId] = useState(prefill?.vehicleId || '');
+       const [odo, setOdo] = useState(prefill?.odometer || '');
+       const [date, setDate] = useState(prefill?.date || new Date().toISOString().split('T')[0]);
        const [payToId, setPayToId] = useState(prefill?.toAccountId || '');
 
        const suggestions = useMemo(() => {
@@ -245,7 +227,7 @@
        const handleSubmit = (e) => {
           e.preventDefault();
           if(!amount) return;
-          if((cat==='Vehicle'||cat==='Fuel') && vehId) {
+          if((cat==='Vehicle'||cat==='Fuel') && vehId && odo) {
              const veh = data.vehicles.find(v=>v.id===vehId);
              let maxOdo = veh.startOdo||0;
              data.transactions.forEach(t=>{if(t.vehicleId===vehId && t.odometer > maxOdo) maxOdo=t.odometer});
@@ -254,6 +236,7 @@
           let finalAmt = parseFloat(amount);
           if (mode === 'expense') finalAmt = -Math.abs(finalAmt);
           actions.saveTransaction({
+             id: prefill?.id,
              date, amount: finalAmt, description: desc || (mode==='payment'?'Bill Pay':'Expense'),
              accountId: accId, category: mode==='payment' ? 'Payment' : (cat||'Uncategorized'),
              vehicleId: (cat==='Vehicle'||cat==='Fuel') ? vehId : null, odometer: odo ? parseInt(odo) : null,
@@ -263,95 +246,76 @@
        };
 
        return (
-         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none">
-            <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm pointer-events-auto transition-opacity" onClick={actions.closeModal} />
-            <div className="relative bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl pointer-events-auto p-6 animate-slide-up pb-safe">
-               <div className="flex bg-zinc-100 p-1 rounded-xl mb-6">
-                  {['expense','payment','income'].map(m => (
-                     <button key={m} onClick={()=>setMode(m)} className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${mode===m ? 'bg-white shadow text-zinc-900' : 'text-zinc-400'}`}>{m}</button>
-                  ))}
-               </div>
-               <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="relative">
-                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-zinc-300">$</span>
-                     <input type="number" inputMode="decimal" step="0.01" autoFocus placeholder="0.00" value={amount} onChange={e=>setAmount(e.target.value)} className="w-full pl-10 pr-4 py-4 text-4xl font-black bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-zinc-900 placeholder-zinc-200 outline-none" />
-                  </div>
-                  <div className="flex gap-2 mb-2">
-                     <button type="button" onClick={()=>setDate(new Date().toISOString().split('T')[0])} className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-900 text-white">Today</button>
-                     <button type="button" onClick={()=>{const d=new Date();d.setDate(d.getDate()-1);setDate(d.toISOString().split('T')[0])}} className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-100 text-zinc-600">Yesterday</button>
-                  </div>
-                  {mode === 'payment' ? (
-                     <div className="bg-zinc-50 p-4 rounded-xl space-y-2 border border-zinc-100">
-                        <div className="text-xs font-bold text-zinc-400 uppercase">Single Source &rarr; Credit Card</div>
-                        <select value={payToId} onChange={e=>setPayToId(e.target.value)} className="w-full p-3 bg-white rounded-xl font-bold" required>
-                           <option value="">Select Card...</option>
-                           {data.accounts.filter(a=>a.type==='liability').map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
-                        </select>
-                     </div>
-                  ) : (
-                     <>
-                        <input placeholder="Description" value={desc} onChange={e=>setDesc(e.target.value)} className="w-full p-4 bg-zinc-50 rounded-xl font-bold" />
-                        {suggestions.length > 0 && <div className="flex gap-2">{suggestions.map(s=><button key={s} type="button" onClick={()=>setCat(s)} className="px-3 py-1 bg-zinc-100 rounded-full text-xs font-bold text-zinc-600">{s}</button>)}</div>}
-                        <div className="flex gap-2">
-                           <select value={accId} onChange={e=>setAccId(e.target.value)} className="flex-1 p-3 bg-zinc-50 rounded-xl font-bold text-sm" required>
-                              <option value="">Account...</option>
-                              {data.accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
-                           </select>
-                           <select value={cat} onChange={e=>setCat(e.target.value)} className="flex-1 p-3 bg-zinc-50 rounded-xl font-bold text-sm" required>
-                              <option value="">Category...</option>
-                              {['Food','Housing','Transport','Vehicle','Personal','Medical','Services'].map(c=><option key={c} value={c}>{c}</option>)}
-                           </select>
-                        </div>
-                        {(cat === 'Vehicle' || cat === 'Transport') && (
-                           <div className="bg-zinc-50 p-3 rounded-xl space-y-3">
-                              <select value={vehId} onChange={e=>setVehId(e.target.value)} className="w-full p-3 bg-white rounded-lg text-sm font-bold"><option value="">Vehicle?</option>{data.vehicles.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</select>
-                              <input type="number" placeholder="Current Odometer" value={odo} onChange={e=>setOdo(e.target.value)} className="w-full p-3 bg-white rounded-lg text-sm" />
-                           </div>
-                        )}
-                     </>
-                  )}
-                  <button className="w-full bg-zinc-900 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform">Save</button>
-               </form>
+         <Modal onClose={actions.closeModal}>
+            <div className="flex bg-zinc-100 p-1 rounded-xl mb-6">
+               {['expense','payment','income'].map(m => (
+                  <button key={m} onClick={()=>setMode(m)} className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${mode===m ? 'bg-white shadow text-zinc-900' : 'text-zinc-400'}`}>{m}</button>
+               ))}
             </div>
-         </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+               <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-zinc-300">$</span>
+                  <input type="number" inputMode="decimal" step="0.01" autoFocus placeholder="0.00" value={amount} onChange={e=>setAmount(e.target.value)} className="w-full pl-10 pr-4 py-4 text-4xl font-black bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-zinc-900 placeholder-zinc-200 outline-none" />
+               </div>
+               <div className="flex gap-2 mb-2">
+                  <button type="button" onClick={()=>setDate(new Date().toISOString().split('T')[0])} className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-900 text-white">Today</button>
+                  <button type="button" onClick={()=>{const d=new Date();d.setDate(d.getDate()-1);setDate(d.toISOString().split('T')[0])}} className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-100 text-zinc-600">Yesterday</button>
+                  <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="ml-auto bg-transparent text-xs font-bold text-zinc-400" />
+               </div>
+               {mode === 'payment' ? (
+                  <div className="bg-zinc-50 p-4 rounded-xl space-y-2 border border-zinc-100">
+                     <div className="text-xs font-bold text-zinc-400 uppercase">From Joint Checking &rarr; To</div>
+                     <select value={payToId} onChange={e=>setPayToId(e.target.value)} className="w-full p-3 bg-white rounded-xl font-bold" required>
+                        <option value="">Select Card...</option>
+                        {data.accounts.filter(a=>a.type==='liability').map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+                     </select>
+                  </div>
+               ) : (
+                  <>
+                     <input placeholder="Description" value={desc} onChange={e=>setDesc(e.target.value)} className="w-full p-4 bg-zinc-50 rounded-xl font-bold" />
+                     {suggestions.length > 0 && <div className="flex gap-2">{suggestions.map(s=><button key={s} type="button" onClick={()=>setCat(s)} className="px-3 py-1 bg-zinc-100 rounded-full text-xs font-bold text-zinc-600">{s}</button>)}</div>}
+                     <div className="flex gap-2">
+                        <select value={accId} onChange={e=>setAccId(e.target.value)} className="flex-1 p-3 bg-zinc-50 rounded-xl font-bold text-sm" required><option value="">Account...</option>{data.accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
+                        <select value={cat} onChange={e=>setCat(e.target.value)} className="flex-1 p-3 bg-zinc-50 rounded-xl font-bold text-sm" required><option value="">Category...</option>{['Food','Housing','Transport','Vehicle','Personal','Medical','Services'].map(c=><option key={c} value={c}>{c}</option>)}</select>
+                     </div>
+                     {(cat === 'Vehicle' || cat === 'Transport') && (
+                        <div className="bg-zinc-50 p-3 rounded-xl space-y-3">
+                           <select value={vehId} onChange={e=>setVehId(e.target.value)} className="w-full p-3 bg-white rounded-lg text-sm font-bold"><option value="">Vehicle?</option>{data.vehicles.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</select>
+                           <input type="number" placeholder="Current Odometer" value={odo} onChange={e=>setOdo(e.target.value)} className="w-full p-3 bg-white rounded-lg text-sm" />
+                        </div>
+                     )}
+                  </>
+               )}
+               <button className="w-full bg-zinc-900 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform">Save</button>
+            </form>
+         </Modal>
+       );
+    };
+
+    // Drilldown Modal
+    const DrilldownModal = () => {
+       const { modal, actions, data } = useContext(AppContext);
+       if (!modal || modal.type !== 'drilldown') return null;
+       const { title, filter } = modal.props;
+       const filteredTxs = data.transactions.filter(filter);
+
+       return (
+          <Modal onClose={actions.closeModal}>
+             <h2 className="text-xl font-black text-zinc-900 mb-4">{title}</h2>
+             <div className="space-y-2">
+                {filteredTxs.length === 0 && <div className="text-zinc-400">No transactions found.</div>}
+                {filteredTxs.map(t => (
+                   <div key={t.id} onClick={() => actions.openModal('add', { prefill: t })} className="flex justify-between items-center p-3 bg-zinc-50 rounded-lg">
+                      <div><div className="font-bold text-sm">{t.description}</div><div className="text-xs text-zinc-400">{Format.date(t.date)}</div></div>
+                      <div className="font-bold text-sm">{Format.money(t.amount)}</div>
+                   </div>
+                ))}
+             </div>
+          </Modal>
        );
     };
 
     // --- VIEWS ---
-    const GroupedList = ({ txs, accounts, onDelete }) => {
-       const groups = {}; txs.forEach(t => { if(!groups[t.date]) groups[t.date] = []; groups[t.date].push(t); });
-       const dates = Object.keys(groups).sort((a,b)=>new Date(b)-new Date(a));
-       const [confirmDel, setConfirmDel] = useState(null);
-       return (
-          <div className="space-y-4">
-             {dates.map(d => (
-                <div key={d}>
-                   <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 sticky top-14 bg-zinc-50/90 backdrop-blur py-1 z-10">{d === new Date().toISOString().split('T')[0] ? 'Today' : Format.date(d)}</div>
-                   <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
-                      {groups[d].map(t => (
-                         <div key={t.id} className="flex justify-between items-center p-4 border-b border-zinc-50 last:border-0 active:bg-zinc-50">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                               <div className={`shrink-0 p-2 rounded-full ${t.category.includes('Payment') ? 'bg-zinc-100 text-zinc-400' : (t.amount > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600')}`}>
-                                  <Icon name={t.category.includes('Payment') ? 'arrowRight' : (t.amount>0?'trendingUp':'trendingDown')} size={16} />
-                               </div>
-                               <div className="min-w-0">
-                                  <div className="font-bold text-sm text-zinc-800 truncate">{t.description}</div>
-                                  <div className="text-[10px] text-zinc-400 font-bold uppercase truncate">{t.category} • {accounts.find(a=>a.id===t.accountId)?.name}</div>
-                               </div>
-                            </div>
-                            <div className="flex items-center gap-3 shrink-0">
-                               <div className={`font-bold text-sm ${t.category.includes('Payment') ? 'text-zinc-400' : (t.amount>0?'text-emerald-600':'text-zinc-900')}`}>{Format.money(t.amount)}</div>
-                               <button onClick={()=>{if(confirmDel===t.id){onDelete(t.id);setConfirmDel(null)}else{setConfirmDel(t.id);setTimeout(()=>setConfirmDel(null),3000)}}} className={`p-2 rounded-lg transition-colors ${confirmDel===t.id?'bg-rose-100 text-rose-600':'text-zinc-300'}`}><Icon name="trash" size={16}/></button>
-                            </div>
-                         </div>
-                      ))}
-                   </div>
-                </div>
-             ))}
-          </div>
-       );
-    };
-
     const CFOView = ({ data, actions }) => {
       const asset = data.accounts.filter(a => a.type === 'asset');
       const liab = data.accounts.filter(a => a.type === 'liability');
@@ -362,21 +326,56 @@
          const p = []; for(let i=5; i>=0; i--) { const d = new Date(); d.setMonth(d.getMonth()-i); d.setDate(1); const val = data.transactions.filter(t => t.date <= d.toISOString().split('T')[0]).reduce((s,t)=>s+t.amount,0); p.push(val); }
          return p;
       }, [data.transactions]);
+      
+      const [search, setSearch] = useState('');
+      const filtered = data.transactions.filter(t => t.description?.toLowerCase().includes(search.toLowerCase()));
 
       return (
         <div className="p-4 space-y-6 pb-24 animate-fade-in">
-          <div className="glass-dark p-6 rounded-3xl shadow-glow relative overflow-hidden text-white">
-            <div className="relative z-10">
-               <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Net Liquid</div>
-               <div className="text-4xl font-black tracking-tighter">{Format.money(totalCash + totalDebt)}</div>
-               <div className="flex gap-6 mt-6 pt-4 border-t border-zinc-800">
-                  <div><div className="text-[10px] text-zinc-500 font-bold uppercase">Cash</div><div className="text-lg font-bold text-emerald-400">{Format.money(totalCash)}</div></div>
-                  <div><div className="text-[10px] text-zinc-500 font-bold uppercase">Debt</div><div className="text-lg font-bold text-rose-400">{Format.money(totalDebt)}</div></div>
-               </div>
-            </div>
-            <div className="absolute bottom-0 right-0 w-2/3 h-24 opacity-20 translate-y-2 translate-x-4"><Sparkline points={trend} color="#fff" /></div>
+          {/* Search Bar */}
+          <div className="relative">
+             <Icon name="search" size={18} className="absolute left-3 top-3 text-zinc-400"/>
+             <input placeholder="Search transactions..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 p-3 bg-white rounded-xl shadow-sm border border-zinc-100" />
           </div>
-          <GroupedList txs={data.transactions.slice(0,10)} accounts={data.accounts} onDelete={actions.deleteTransaction} />
+
+          {search ? (
+             <div className="bg-white rounded-xl shadow-sm p-2 space-y-2">
+                {filtered.map(t => (
+                   <div key={t.id} onClick={() => actions.openModal('add', { prefill: t })} className="flex justify-between p-3 border-b border-zinc-50 last:border-0">
+                      <span className="font-bold text-sm">{t.description}</span><span className="font-mono text-sm">{Format.money(t.amount)}</span>
+                   </div>
+                ))}
+                {filtered.length===0 && <div className="p-4 text-center text-zinc-400">No matches.</div>}
+             </div>
+          ) : (
+             <>
+               <div className="glass-dark p-6 rounded-3xl shadow-glow relative overflow-hidden text-white">
+                 <div className="relative z-10">
+                    <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Net Liquid</div>
+                    <div className="text-4xl font-black tracking-tighter">{Format.money(totalCash + totalDebt)}</div>
+                    <div className="flex gap-6 mt-6 pt-4 border-t border-zinc-800">
+                       <div><div className="text-[10px] text-zinc-500 font-bold uppercase">Cash</div><div className="text-lg font-bold text-emerald-400">{Format.money(totalCash)}</div></div>
+                       <div><div className="text-[10px] text-zinc-500 font-bold uppercase">Debt</div><div className="text-lg font-bold text-rose-400">{Format.money(totalDebt)}</div></div>
+                    </div>
+                 </div>
+                 <div className="absolute bottom-0 right-0 w-2/3 h-24 opacity-20 translate-y-2 translate-x-4"><Sparkline points={trend} color="#fff" /></div>
+               </div>
+               
+               {/* Clickable Groups */}
+               <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
+                  <div className="p-4 border-b border-zinc-50 font-bold text-zinc-900">Recent Activity</div>
+                  {data.transactions.slice(0, 8).map(t => (
+                     <div key={t.id} onClick={() => actions.openModal('add', { prefill: t })} className="flex justify-between items-center p-4 border-b border-zinc-50 last:border-0 active:bg-zinc-50">
+                        <div className="flex items-center gap-3">
+                           <div className={`p-2 rounded-full ${t.amount>0?'bg-emerald-50 text-emerald-600':'bg-rose-50 text-rose-600'}`}><Icon name={t.amount>0?'trendingUp':'trendingDown'} size={16}/></div>
+                           <div><div className="font-bold text-sm text-zinc-800">{t.description}</div><div className="text-[10px] text-zinc-400 font-bold uppercase">{t.category}</div></div>
+                        </div>
+                        <div className="font-bold text-sm text-zinc-900">{Format.money(t.amount)}</div>
+                     </div>
+                  ))}
+               </div>
+             </>
+          )}
         </div>
       );
     };
@@ -387,14 +386,16 @@
           <div className="p-4 space-y-4 pb-24 animate-fade-in">
              <div className="flex justify-between items-center"><h2 className="text-2xl font-black">Garage</h2><button onClick={() => setIsAdding(!isAdding)} className="p-2 bg-zinc-100 rounded-lg"><Icon name="plus" size={20}/></button></div>
              {isAdding && <form onSubmit={(e)=>{e.preventDefault();actions.saveVehicle({name:e.target.name.value,startOdo:e.target.odo.value,status:'active'});setIsAdding(false)}} className="bg-white p-4 rounded-xl shadow space-y-3"><input name="name" placeholder="Name" className="w-full p-3 bg-zinc-50 rounded-lg" required /><input name="odo" type="number" placeholder="Start Odo" className="w-full p-3 bg-zinc-50 rounded-lg" required /><button className="w-full bg-zinc-900 text-white font-bold py-3 rounded-lg">Add</button></form>}
-             <div className="space-y-4">{data.vehicles.filter(v=>v.status!=='archived').map(v => {
+             {data.vehicles.filter(v=>v.status!=='archived').map(v => {
                 const txs = data.transactions.filter(t => t.vehicleId === v.id);
                 const cost = txs.reduce((s,t) => s + Math.abs(t.amount), 0);
                 let cur = v.startOdo||0; txs.forEach(t=>{if(t.odometer>cur) cur=t.odometer});
                 return (
-                   <div key={v.id} className="bg-white p-5 rounded-2xl border border-zinc-100 shadow-sm"><div className="flex justify-between items-start mb-4"><div className="flex items-center gap-3"><div className="p-3 bg-zinc-100 text-zinc-600 rounded-xl"><Icon name="car" size={24}/></div><div><div className="font-bold text-lg text-zinc-900">{v.name}</div><div className="text-[10px] text-zinc-400 font-bold uppercase">{cur.toLocaleString()} Miles</div></div></div><div className="text-right"><div className="text-[10px] text-zinc-400 uppercase font-bold">Cost / Mile</div><div className="text-xl font-black text-rose-500">${(cost / Math.max(1, cur-(v.startOdo||0))).toFixed(2)}</div></div></div></div>
+                   <div key={v.id} onClick={() => actions.openModal('drilldown', { title: `${v.name} Log`, filter: t => t.vehicleId === v.id })} className="bg-white p-5 rounded-2xl border border-zinc-100 shadow-sm active:scale-95 transition-transform">
+                      <div className="flex justify-between items-start mb-4"><div className="flex items-center gap-3"><div className="p-3 bg-zinc-100 text-zinc-600 rounded-xl"><Icon name="car" size={24}/></div><div><div className="font-bold text-lg text-zinc-900">{v.name}</div><div className="text-[10px] text-zinc-400 font-bold uppercase">{cur.toLocaleString()} Miles</div></div></div><div className="text-right"><div className="text-[10px] text-zinc-400 uppercase font-bold">Cost / Mile</div><div className="text-xl font-black text-rose-500">${(cost / Math.max(1, cur-(v.startOdo||0))).toFixed(2)}</div></div></div>
+                   </div>
                 );
-             })}</div>
+             })}
           </div>
        );
     };
@@ -407,48 +408,32 @@
              {isAdding && <form onSubmit={(e)=>{e.preventDefault();actions.saveAccount({name:e.target.name.value,type:e.target.type.value,limit:e.target.limit.value});setIsAdding(false)}} className="bg-white p-4 rounded-xl shadow space-y-3"><select name="type" className="w-full p-3 bg-zinc-50 rounded-lg"><option value="liability">Credit Card</option><option value="asset">Checking</option></select><input name="name" placeholder="Name" className="w-full p-3 bg-zinc-50 rounded-lg" required /><input name="limit" placeholder="Limit" className="w-full p-3 bg-zinc-50 rounded-lg" /><button className="w-full bg-zinc-900 text-white py-3 rounded-lg font-bold">Save</button></form>}
              <div className="space-y-3">{data.accounts.map(a => {
                 const bal = data.transactions.filter(t => t.accountId === a.id).reduce((s,t) => s + t.amount, 0);
-                const limit = parseFloat(a.limit||0); const util = limit>0 ? Math.abs(bal)/limit : 0;
                 return (
-                   <div key={a.id} className={`p-4 bg-white border ${util>0.9?'border-rose-300 ring-2 ring-rose-100':'border-zinc-100'} rounded-xl shadow-sm`}><div className="flex justify-between items-center mb-2"><div><div className="font-bold text-zinc-900 flex gap-2">{a.name}{util>0.9&&<Icon name="alert" size={14} className="text-rose-500"/>}</div><div className="text-xs text-zinc-400 capitalize">{a.type}</div></div><div className="text-right"><div className={`font-black ${bal>=0?'text-emerald-600':'text-rose-600'}`}>{a.type==='liability'?Format.money(Math.abs(bal)):Format.money(bal)}</div>{a.type==='liability' && <button onClick={()=>actions.openModal('add',{mode:'payment',amount:bal,toAccountId:a.id})} className="mt-1 text-xs bg-zinc-900 text-white px-3 py-1 rounded-full font-bold">Pay Card</button>}</div></div>{limit>0 && <div className="h-2 bg-zinc-100 rounded-full overflow-hidden mt-2"><div className={`h-full ${util>0.9?'bg-rose-500':'bg-zinc-500'}`} style={{width:`${Math.min(util*100,100)}%`}}></div></div>}</div>
+                   <div key={a.id} onClick={() => actions.openModal('drilldown', { title: a.name, filter: t => t.accountId === a.id })} className="p-4 bg-white border border-zinc-100 rounded-xl shadow-sm active:scale-95 transition-transform"><div className="flex justify-between items-center"><div><div className="font-bold text-zinc-900">{a.name}</div><div className="text-xs text-zinc-400 capitalize">{a.type}</div></div><div className={`font-black ${bal>=0?'text-emerald-600':'text-rose-600'}`}>{a.type==='liability'?Format.money(Math.abs(bal)):Format.money(bal)}</div></div></div>
                 )
              })}</div>
           </div>
        );
     };
 
-    const InsightsView = ({ data }) => {
-       const now = new Date();
-       const ytdTx = data.transactions.filter(t => new Date(t.date).getFullYear() === now.getFullYear());
-       const income = ytdTx.filter(t=>t.amount>0 && !t.category.includes('Payment')).reduce((s,t)=>s+t.amount,0);
-       const expense = ytdTx.filter(t=>t.amount<0 && !t.category.includes('Payment')).reduce((s,t)=>s+Math.abs(t.amount),0);
-       const catMap = {}; data.transactions.filter(t=>t.amount<0 && !t.category.includes('Payment')).forEach(t=>{catMap[t.category]=(catMap[t.category]||0)+Math.abs(t.amount)});
-       const barData = Object.keys(catMap).map(k=>({label:k,value:catMap[k]})).sort((a,b)=>b.value-a.value).slice(0,5);
+    const BillsView = ({ data, actions }) => {
+       const [isAdding, setIsAdding] = useState(false);
        return (
-          <div className="p-4 space-y-8 pb-24 animate-fade-in">
-             <h2 className="text-2xl font-black">Intel</h2>
-             <div className="bg-white p-6 rounded-2xl shadow-sm border border-zinc-100">
-                <h3 className="font-bold text-sm text-zinc-500 uppercase mb-4 tracking-wider">YTD Flow</h3>
-                <div className="flex justify-between mb-4"><div><div className="text-3xl font-black text-zinc-900">{Format.money(income-expense)}</div><div className="text-xs text-zinc-400">Net Flow</div></div><div className="text-right space-y-1"><div className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded">IN: {Format.money(income)}</div><div className="text-xs text-rose-600 font-bold bg-rose-50 px-2 py-1 rounded">OUT: {Format.money(expense)}</div></div></div>
-                <div className="h-3 bg-zinc-100 rounded-full overflow-hidden flex w-full"><div className="h-full bg-emerald-500" style={{width:`${(income/(income+expense||1))*100}%`}}></div><div className="h-full bg-rose-500" style={{width:`${(expense/(income+expense||1))*100}%`}}></div></div>
-             </div>
-             <div><h3 className="font-bold text-zinc-900 mb-4 px-1">Top Categories</h3><div className="bg-white p-6 rounded-2xl shadow-sm border border-zinc-100"><BarChart data={barData} color="#8B5CF6" height={150} /></div></div>
+          <div className="p-4 space-y-4 pb-24 animate-fade-in">
+             <div className="flex justify-between items-center"><h2 className="text-2xl font-black">Recurring</h2><button onClick={() => setIsAdding(!isAdding)} className="bg-zinc-900 text-white px-4 py-2 rounded-lg font-bold text-sm">Add</button></div>
+             {isAdding && <form onSubmit={(e)=>{e.preventDefault();actions.saveBill({name:e.target.name.value,amount:parseFloat(e.target.amount.value),day:e.target.day.value});setIsAdding(false)}} className="bg-white p-4 rounded-xl shadow space-y-3"><input name="name" placeholder="Name (e.g. Netflix)" className="w-full p-3 bg-zinc-50 rounded-lg" required /><div className="flex gap-2"><input name="amount" type="number" placeholder="Amount" className="flex-1 p-3 bg-zinc-50 rounded-lg"/><input name="day" type="number" placeholder="Day (1-31)" className="flex-1 p-3 bg-zinc-50 rounded-lg"/></div><button className="w-full bg-zinc-900 text-white py-3 rounded-lg font-bold">Save</button></form>}
+             <div className="space-y-3">{data.bills.map(b => (
+                <div key={b.id} className="p-4 bg-white border border-zinc-100 rounded-xl flex justify-between items-center"><div><div className="font-bold">{b.name}</div><div className="text-xs text-zinc-400">Due day {b.day}</div></div><div className="flex items-center gap-3"><div className="font-bold">{Format.money(b.amount)}</div><button onClick={()=>actions.deleteBill(b.id)} className="text-rose-400"><Icon name="trash" size={16}/></button></div></div>
+             ))}</div>
           </div>
        );
     };
 
-    const ToolsView = ({ actions }) => (
-       <div className="p-4 space-y-6 pb-24 animate-fade-in">
-          <h2 className="text-2xl font-black">Tools</h2>
-          <button onClick={actions.exportData} className="w-full bg-white border border-zinc-200 p-4 rounded-xl font-bold flex justify-center gap-2 btn-press"><Icon name="download"/> Export CSV</button>
-          <button onClick={actions.logout} className="w-full bg-rose-50 text-rose-600 p-4 rounded-xl font-bold flex justify-center gap-2 btn-press"><Icon name="logOut"/> Sign Out</button>
-       </div>
-    );
-
     const App = () => {
       const { user, loading, actions, data, modal } = useContext(AppContext);
       const [tab, setTab] = useState('cfo');
-      if (loading) return <div className="h-screen flex items-center justify-center font-bold text-zinc-400">Loading Relly v12...</div>;
-      if (!user) return <div className="h-screen flex flex-col items-center justify-center p-6 bg-zinc-50"><div className="w-24 h-24 bg-zinc-900 rounded-3xl flex items-center justify-center shadow-xl mb-8"><Icon name="pieChart" size={48} className="text-white"/></div><h1 className="text-4xl font-black text-zinc-900 mb-2">Relly v12</h1><button onClick={actions.login} className="bg-zinc-900 text-white px-10 py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-transform">Sign in with Google</button></div>;
+      if (loading) return <div className="h-screen flex items-center justify-center font-bold text-zinc-400">Loading Relly v13...</div>;
+      if (!user) return <div className="h-screen flex flex-col items-center justify-center p-6 bg-zinc-50"><div className="w-24 h-24 bg-zinc-900 rounded-3xl flex items-center justify-center shadow-xl mb-8"><Icon name="pieChart" size={48} className="text-white"/></div><h1 className="text-4xl font-black text-zinc-900 mb-2">Relly v13</h1><button onClick={actions.login} className="bg-zinc-900 text-white px-10 py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-transform">Sign in with Google</button></div>;
 
       return (
         <div className="min-h-screen bg-zinc-50 pb-safe pt-safe">
@@ -456,13 +441,13 @@
            <div className="max-w-lg mx-auto">
               {tab === 'cfo' && <CFOView data={data} actions={actions} />}
               {tab === 'garage' && <GarageView data={data} actions={actions} />}
-              {tab === 'insights' && <InsightsView data={data} />}
               {tab === 'accounts' && <AccountsView data={data} actions={actions} />}
-              {tab === 'tools' && <ToolsView actions={actions} />}
+              {tab === 'bills' && <BillsView data={data} actions={actions} />}
            </div>
-           <button onClick={() => actions.openModal('add')} className="fixed bottom-24 right-6 w-16 h-16 bg-zinc-900 text-white rounded-full shadow-2xl flex items-center justify-center btn-press z-40"><Icon name="plus" size={32} /></button>
-           <div className="fixed bottom-0 left-0 right-0 glass border-t border-zinc-200 px-6 py-3 pb-8 flex justify-between items-center z-50 max-w-lg mx-auto">{['cfo', 'garage', 'insights', 'accounts', 'tools'].map(t => (<button key={t} onClick={() => setTab(t)} className={`flex flex-col items-center gap-1 transition-colors ${tab===t ? 'text-zinc-900' : 'text-zinc-400'}`}><Icon name={t === 'cfo' ? 'home' : (t === 'garage' ? 'car' : (t === 'insights' ? 'pieChart' : (t === 'accounts' ? 'creditCard' : 'settings')))} size={24} /><span className="text-[10px] font-bold uppercase tracking-wider">{t}</span></button>))}</div>
-           <AddModal />
+           <button onClick={() => actions.openModal('add', {})} className="fixed bottom-24 right-6 w-16 h-16 bg-zinc-900 text-white rounded-full shadow-2xl flex items-center justify-center btn-press z-40"><Icon name="plus" size={32} /></button>
+           <div className="fixed bottom-0 left-0 right-0 glass border-t border-zinc-200 px-6 py-3 pb-8 flex justify-between items-center z-50 max-w-lg mx-auto">{['cfo', 'garage', 'accounts', 'bills'].map(t => (<button key={t} onClick={() => setTab(t)} className={`flex flex-col items-center gap-1 transition-colors ${tab===t ? 'text-zinc-900' : 'text-zinc-400'}`}><Icon name={t === 'cfo' ? 'home' : (t === 'garage' ? 'car' : (t === 'accounts' ? 'creditCard' : 'repeat'))} size={24} /><span className="text-[10px] font-bold uppercase tracking-wider">{t}</span></button>))}</div>
+           {modal?.type === 'add' && <AddModal />}
+           {modal?.type === 'drilldown' && <DrilldownModal />}
         </div>
       );
     };
